@@ -22,4 +22,4 @@ inputs:
   changenote:
     description: 'Changenote of this update'
     required: false
-    default: 'Uploaded using the [url=https://github.com/hmlendea/steam-workshop-upload]hmlendea/steam-workshop-upload[/url] GitHub Actions workflow.'
+    default: 'Uploaded using the [url=https://github.com/hmlendea/steam-workshop-update]hmlendea/steam-workshop-update[/url] GitHub Actions workflow.'
