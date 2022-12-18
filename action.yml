@@ -1,0 +1,25 @@
+name: 'steam-workshop-upload'
+description: 'Upload your mod to the Steam Workshop'
+
+branding:
+  icon: upload-cloud
+  color: purple
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+
+inputs:
+  appid:
+    description: 'Steam App ID'
+    required: true
+  itemid:
+    description: 'Workshop Item ID'
+    required: true
+  path:
+    description: 'Path of folder to upload'
+    required: true
+  changenote:
+    description: 'Changenote of this update'
+    required: false
+    default: 'Uploaded using the [url=https://github.com/hmlendea/steam-workshop-upload]hmlendea/steam-workshop-upload[/url] GitHub Actions workflow.'
