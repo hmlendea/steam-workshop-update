@@ -1,5 +1,5 @@
-name: 'steam-workshop-upload'
-description: 'Upload your mod to the Steam Workshop'
+name: 'steam-workshop-update'
+description: 'Updates a mod on the Steam Workshop'
 
 branding:
   icon: upload-cloud
@@ -22,4 +22,4 @@ inputs:
   changenote:
     description: 'Changenote of this update'
     required: false
-    default: 'Uploaded using the [url=https://github.com/hmlendea/steam-workshop-upload]hmlendea/steam-workshop-upload[/url] GitHub Actions workflow.'
+    default: 'Uploaded using the [url=https://github.com/hmlendea/steam-workshop-update]hmlendea/steam-workshop-update[/url] GitHub Actions workflow.'

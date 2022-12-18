@@ -7,8 +7,8 @@ Takes inspiration from:
 # Usage
 
 ```yaml
-- name: steam-workshop-upload
-  uses: hmlendea/steam-workshop-upload@v1
+- name: steam-workshop-update
+  uses: hmlendea/steam-workshop-update@v1.0.0
   with:
     appid: 1158310 # The game's Steam App ID
     itemid: 0000000000 # The mod's Steam Workshop Item ID
