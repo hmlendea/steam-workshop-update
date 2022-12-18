@@ -1,5 +1,5 @@
-name: 'steam-workshop-upload'
-description: 'Upload your mod to the Steam Workshop'
+name: 'steam-workshop-update'
+description: 'Updates a mod on the Steam Workshop'
 
 branding:
   icon: upload-cloud
