@@ -20,24 +20,26 @@ cat << EOF > /home/steam/workshop.vdf
 }
 EOF
 
-echo "$(cat /home/steam/workshop.vdf)"
+cat '/home/steam/workshop.vdf'
 
 if [[ -z "${STEAM_2FASEED}" ]]; then
   /home/steam/steamcmd/steamcmd.sh +@ShutdownOnFailedCommand 1 +login ${STEAM_USERNAME} ${STEAM_PASSWORD} +workshop_build_item /home/steam/workshop.vdf +quit
 else
   export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
   STEAM_2FACODE=$(/home/steam/steam-totp ${STEAM_2FASEED})
+  
   if [[ $? -ne 0 ]]; then
     exit 1
   fi
+  
   /home/steam/steamcmd/steamcmd.sh +@ShutdownOnFailedCommand 1 +login ${STEAM_USERNAME} ${STEAM_PASSWORD} ${STEAM_2FACODE} +workshop_build_item /home/steam/workshop.vdf +quit
 fi
 
 [ $? -eq 0 ] && exit 0 || (
-    echo stderr
+    echo 'Showing stderr.txt:'
     echo "$(cat /home/steam/Steam/logs/stderr.txt)"
     echo
-    echo workshop_log
+    echo 'Showing workshop_log.txt:'
     echo "$(cat /home/steam/Steam/logs/workshop_log.txt)"
 
     exit 1
