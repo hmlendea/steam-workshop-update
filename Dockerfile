@@ -1,4 +1,4 @@
-FROM cm2network/steamcmd:root as steam-workshop-update
+FROM cm2network/steamcmd:latest as steam-workshop-update
 RUN apt-get -y update && apt-get install -y wget --no-install-recommends && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 ENV STEAM_USERNAME=
