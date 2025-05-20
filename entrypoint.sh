@@ -43,8 +43,8 @@ ATTEMPTS_CURRENT=0
 ATTEMPTS_MAX=3
 IS_SUCCESSFUL=0
 
-while [[ $attempts -lt $max_attempts ]]; do
-    echo "Attempt $((attempts+1)) of $max_attempts..."
+while [[ ${ATTEMPTS_CURRENT} -lt ${ATTEMPTS_MAX} ]]; do
+    echo "Attempt $((ATTEMPTS_CURRENT+1)) of ${ATTEMPTS_MAX}..."
     run_steamcmd
 
     if [[ $? -eq 0 ]]; then
