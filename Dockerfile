@@ -11,5 +11,8 @@ RUN chmod +x /entrypoint.sh && \
 wget https://github.com/hmlendea/steam-totp/releases/download/v1.0.0/steam-totp_1.0.0_linux-x64 -O /home/steam/steam-totp && \
 chmod +x /home/steam/steam-totp
 
+chown -R steam:steam /home/steam
+chmod -R u+rwX /home/steam
+
 CMD ["."]
 ENTRYPOINT ["/entrypoint.sh"]
