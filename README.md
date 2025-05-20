@@ -8,7 +8,7 @@ Takes inspiration from:
 
 ```yaml
 - name: steam-workshop-update
-  uses: hmlendea/steam-workshop-update@v1.0.0
+  uses: hmlendea/steam-workshop-update@latest
   with:
     appid: 1158310 # The game's Steam App ID
     itemid: 0000000000 # The mod's Steam Workshop Item ID
