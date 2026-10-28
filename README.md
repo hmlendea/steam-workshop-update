@@ -62,9 +62,12 @@ docker run --rm steam-workshop-update
 
 ## 🤝 Contributing
 
-Contributions are welcome. Please:
+You are welcome to submit any suggestion, feedback, or modification to this project.
 
-- Keep the pull requests focused and consistent with the existing code style
+When doing so, please:
+- Maintain cross-platform compatibility
+- Submit focused pull requests that conform to the existing code style
+- Maintain your branch synchronised with `master`
 
 ## 🙏 Acknowledgements
 
