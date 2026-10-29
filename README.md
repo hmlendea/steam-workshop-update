@@ -96,3 +96,10 @@ See [LICENSE](./LICENSE).
 # Privacy and Data
 
 For details on how this GitHub Action handles personal data, see the [Privacy Policy](./PRIVACY.md).
+
+# Security
+
+For details on how to report security vulnerabilities, see the [Security Policy](./SECURITY.md).
+
+## 📜 Code of Conduct
+See the [Code of Conduct](./CODE_OF_CONDUCT.md) for the standards of conduct expected in all project spaces.
