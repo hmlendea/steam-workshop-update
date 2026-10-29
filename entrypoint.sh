@@ -5,17 +5,39 @@ if [[ -z "${GITHUB_WORKSPACE}" ]]; then
     GITHUB_WORKSPACE="/workspace"
 fi
 
+# Sanitize sensitive values from output
+sanitize_output() {
+    local output="$1"
+    # Redact STEAM_PASSWORD
+    output="${output//${STEAM_PASSWORD}/***REDACTED***}"
+    # Redact STEAM_2FACODE if set
+    if [[ -n "${STEAM_2FACODE:-}" ]]; then
+        output="${output//${STEAM_2FACODE}/***REDACTED***}"
+    fi
+    # Redact STEAM_2FASEED if set
+    if [[ -n "${STEAM_2FASEED:-}" ]]; then
+        output="${output//${STEAM_2FASEED}/***REDACTED***}"
+    fi
+    echo "$output"
+}
+
+# Log sanitized command for debugging
+log_sanitized_cmd() {
+    local cmd="$1"
+    echo "DEBUG: $(sanitize_output "$cmd")"
+}
+
 # Input validation function
 validate_input() {
     local name="$1"
     local value="$2"
     local type="$3"
-    
+
     if [[ -z "$value" ]]; then
         echo "FATAL: Input $name is required but not provided."
         exit 1
     fi
-    
+
     case "$type" in
         "numeric")
             if ! [[ "$value" =~ ^[0-9]+$ ]]; then
@@ -89,18 +111,36 @@ cat '/home/steam/workshop.vdf'
 
 # Define the command function
 run_steamcmd() {
+    local -a steamcmd_args=(
+        /home/steam/steamcmd/steamcmd.sh
+        +@ShutdownOnFailedCommand 1
+        +login "${STEAM_USERNAME}"
+        "${STEAM_PASSWORD}"
+    )
+
     if [[ -z "${STEAM_2FASEED}" ]]; then
-        /home/steam/steamcmd/steamcmd.sh +@ShutdownOnFailedCommand 1 +login "${STEAM_USERNAME}" "${STEAM_PASSWORD}" +workshop_build_item /home/steam/workshop.vdf +quit
+        steamcmd_args+=(+workshop_build_item /home/steam/workshop.vdf +quit)
     else
         export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
         STEAM_2FACODE=$(/home/steam/steam-totp "${STEAM_2FASEED}")
 
         if [[ $? -ne 0 ]]; then
+            echo "FATAL: Failed to generate the TOTP code" >&2
             return 1
         fi
 
-        /home/steam/steamcmd/steamcmd.sh +@ShutdownOnFailedCommand 1 +login "${STEAM_USERNAME}" "${STEAM_PASSWORD}" "${STEAM_2FACODE}" +workshop_build_item /home/steam/workshop.vdf +quit
+        # Validate TOTP code format (alphanumeric, 5-6 characters for Steam)
+        if ! [[ "${STEAM_2FACODE}" =~ ^[A-Za-z0-9]{5,6}$ ]]; then
+            echo "FATAL: Generated TOTP code has invalid format: ${STEAM_2FACODE}" >&2
+            return 1
+        fi
+
+        echo "DEBUG: TOTP code validation passed"
+        steamcmd_args+=("${STEAM_2FACODE}" +workshop_build_item /home/steam/workshop.vdf +quit)
     fi
+
+    log_sanitized_cmd "${steamcmd_args[*]}"
+    "${steamcmd_args[@]}"
 }
 
 # Attempt loop
@@ -128,8 +168,8 @@ fi
 
 echo "All ${ATTEMPTS_MAX} attempts failed."
 echo 'Showing stderr.txt:'
-cat /home/steam/Steam/logs/stderr.txt
+sanitize_output "$(cat /home/steam/Steam/logs/stderr.txt)"
 echo
 echo 'Showing workshop_log.txt:'
-cat /home/steam/Steam/logs/workshop_log.txt
+sanitize_output "$(cat /home/steam/Steam/logs/workshop_log.txt)"
 exit 2
