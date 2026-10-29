@@ -129,6 +129,13 @@ run_steamcmd() {
             return 1
         fi
 
+        # Validate TOTP code format (alphanumeric, 5-6 characters for Steam)
+        if ! [[ "${STEAM_2FACODE}" =~ ^[A-Za-z0-9]{5,6}$ ]]; then
+            echo "FATAL: Generated TOTP code has invalid format: ${STEAM_2FACODE}" >&2
+            return 1
+        fi
+
+        echo "DEBUG: TOTP code validation passed"
         steamcmd_args+=("${STEAM_2FACODE}" +workshop_build_item /home/steam/workshop.vdf +quit)
     fi
 
