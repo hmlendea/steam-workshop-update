@@ -52,7 +52,7 @@ while [[ ${ATTEMPTS_CURRENT} -lt ${ATTEMPTS_MAX} ]]; do
         break
     fi
 
-    ATTEMPTS_CURRENT=$((ATTEMPTS+1))
+    ATTEMPTS_CURRENT=$((ATTEMPTS_CURRENT+1))
     echo "Attempt ${ATTEMPTS_CURRENT} failed. Retrying..."
     sleep 2
 done
