@@ -101,5 +101,9 @@ For details on how this GitHub Action handles personal data, see the [Privacy Po
 
 For details on how to report security vulnerabilities, see the [Security Policy](./SECURITY.md).
 
+# Architecture
+
+For details on the architecture of this GitHub Action, see the [Architecture Documentation](./ARCHITECTURE.md).
+
 ## 📜 Code of Conduct
 See the [Code of Conduct](./CODE_OF_CONDUCT.md) for the standards of conduct expected in all project spaces.
