@@ -1,7 +1,7 @@
 [![Donate](https://img.shields.io/badge/-%E2%99%A5%20Donate-%23ff69b4)](https://hmlendea.go.ro/funding)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://gnu.org/licenses/gpl-3.0)
 
-# steam-workshop-update
+# Steam Workshop Update
 
 A GitHub Action that updates a mod on the Steam Workshop. Supports Steam Guard two-factor authentication via a standard TOTP seed and retries the upload automatically on failure.
 
@@ -91,4 +91,8 @@ If you find this project useful, consider [funding it](https://hmlendea.go.ro/fu
 ## 📄 License
 
 Licensed under the `GNU General Public License v3.0` or later.
-See [LICENSE](./LICENSE) for details.
+See [LICENSE](./LICENSE).
+
+# Privacy and Data
+
+For details on how this GitHub Action handles personal data, see the [Privacy Policy](./PRIVACY.md).
