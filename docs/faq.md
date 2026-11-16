@@ -2,7 +2,7 @@
 
 ## Is This An HTTP API?
 
-No. It is a Docker GitHub Action. See the [interface reference](./api-reference/INDEX.md); there are no controllers, routes, JSON responses, or action outputs.
+No. It is a composite GitHub Action. See the [interface reference](./api-reference/INDEX.md); there are no controllers, routes, JSON responses, or action outputs.
 
 ## Does It Build Or Check Out My Mod?
 
@@ -10,7 +10,7 @@ No. Prepare the complete content directory before invoking the action. The scrip
 
 ## Are Retries Limited To Three Attempts?
 
-Not currently in an ordinary environment. The failure counter reads `ATTEMPTS` instead of `ATTEMPTS_CURRENT`, so persistent failures normally repeat indefinitely. See [analysis and reproduction](./flows/retries-and-exit-status.md).
+Yes. The counter is incremented correctly and the client command is tested as an `if` condition, so a persistent failure stops after the third attempt and prints both Steam logs before exiting two. See [retry analysis](./flows/retries-and-exit-status.md).
 
 ## Does Omitting The Seed Disable Steam Guard?
 
@@ -22,15 +22,15 @@ Only indirectly: the wrapper trusts SteamCMD status zero. It does not query Work
 
 ## Can I Use An Absolute Content Path?
 
-The script always concatenates `${GITHUB_WORKSPACE}/${INPUT_PATH}`. It does not treat an absolute-looking input as an override or enforce containment. Prefer a verified relative directory; see [configuration](./configuration.md).
+The script always concatenates `${GITHUB_WORKSPACE}/${INPUT_PATH}` and then requires the resolved path to stay inside the workspace. An absolute-looking input is not treated as an override. Prefer a verified relative directory; see [configuration](./configuration.md).
 
 ## Are Credentials Or Logs Automatically Erased?
 
-The script has no cleanup routine. It avoids deliberate credential fields in the VDF, but supplies credentials as arguments and inherits environment to children. Client state, container removal, host storage, and retained logs need separate review. See [state](./state-and-persistence.md) and [security](./security.md).
+The script has no cleanup routine. `sanitize_output` redacts known credential values from wrapper output, but supplies credentials as arguments and inherits environment to children. Client state, runner storage, and retained logs need separate review. See [state](./state-and-persistence.md) and [security](./security.md).
 
 ## Where Are The Tests And Roadmap?
 
-No committed automated tests, CI workflow, or root roadmap were found. [Testing](./testing.md) records the safe checks performed during documentation generation, not a persistent regression suite.
+[tests/test_entrypoint.sh](../tests/test_entrypoint.sh) is the committed unit suite; it runs with Bash only. No CI workflow or root roadmap exists, so the suite is not enforced automatically. See [testing](./testing.md).
 
 ## Why Is There No Second Architecture Overview?
 

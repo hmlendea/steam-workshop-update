@@ -1,40 +1,41 @@
 # Retries And Exit Status
 
-## Intended And Actual Limit
+## Retry Policy
 
-The [entrypoint](../../entrypoint.sh) initialises `ATTEMPTS_CURRENT=0`, `ATTEMPTS_MAX=3`, and `IS_SUCCESSFUL=0`. It loops while the current counter is below the maximum. The failure assignment is:
+The [entrypoint](../../entrypoint.sh) initialises `ATTEMPTS_CURRENT=0` and `IS_SUCCESSFUL=0`, then increments the counter at the start of each iteration while it is below `ATTEMPTS_MAX` (three). The client command is tested directly:
 
 ```bash
-ATTEMPTS_CURRENT=$((ATTEMPTS+1))
+if run_steamcmd; then
+    IS_SUCCESSFUL=1
+    break
+fi
 ```
 
-It reads `ATTEMPTS`, which the script never initialises, rather than `ATTEMPTS_CURRENT`. Bash arithmetic treats an unset variable as zero here because nounset is not enabled.
+Because the command is used as an `if` condition, a failed attempt is retried instead of terminating the script through `errexit`. `set -euo pipefail` is enabled, so an unrelated untested failure still stops execution.
 
-With ordinary `ATTEMPTS` unset:
+Observed behaviour:
 1. The first iteration prints `Attempt 1 of 3...`.
-2. Failure sets the counter to one and prints `Attempt 1 failed. Retrying...`.
-3. Every subsequent iteration prints `Attempt 2 of 3...`.
-4. Each subsequent failure resets the counter to one, sleeps two seconds, and repeats indefinitely.
+2. A failure prints `Attempt 1 failed.` followed by `Retrying...` and a two-second delay.
+3. At most three invocations occur; the delay is skipped after the final attempt.
+4. Success at any iteration breaks the loop and exits zero.
 
-Thus the implementation has neither three total attempts nor three retries in the normal persistent-failure case. Success can still break the loop at any iteration. External job cancellation or timeout can end it; no local deadline exists.
-
-## Ambient Environment Effect
-
-For a stable numeric inherited `ATTEMPTS`, every failure assigns that value plus one. Values at least two can cause the loop to terminate after its first failure; smaller values can retain an unbounded loop. Untrusted or malformed arithmetic input is not validated. Do not use this accidental variable as a supported retry setting.
+There is no local deadline and no exponential backoff.
 
 ## Exit Contract
 
 | Outcome | Script Status | Important Qualification |
 |---|---|---|
 | Missing username/password | `1` | Before descriptor generation |
+| Missing SteamCMD installation | `1` | Before descriptor generation |
+| Invalid `appid`, `itemid`, `path`, or `changenote` | `1` | Before descriptor generation |
 | Helper/client returns zero as appropriate | `0` | No independent remote publication check |
-| Loop finishes without success | `2` | Normally unreachable on persistent failure with `ATTEMPTS` unset |
-| Cancellation, runtime launch failure, arithmetic failure | Environment-dependent | Not normalized to the explicit application statuses |
+| All three attempts fail | `2` | Prints both Steam log files first |
+| Cancellation, signal termination, arithmetic failure | Environment-dependent | Not normalized to the explicit application statuses |
 
-The terminal failure block prints `stderr.txt` and `workshop_log.txt` from `/home/steam/Steam/logs/`, then exits two. A missing log file produces a `cat` diagnostic but does not replace that explicit final status. Even the final failed iteration sleeps before leaving the loop.
+The terminal failure block prints `stderr.txt` and `workshop_log.txt` from `${STEAMCMD_HOME}/Steam/logs/`, then exits two. A missing log file is reported as not found and does not replace that explicit final status.
 
 ## Reproduction Evidence
 
-A bounded Bash harness extracted the actual loop, mocked `run_steamcmd` to fail and `sleep` to return immediately, removed ambient `ATTEMPTS`, and aborted before a fifth failure. It observed the counter remaining one and repeated `Attempt 2 of 3...` messages. Separate in-memory mocks with inherited `ATTEMPTS=2` reached the terminal status-two block for both helper and client failures.
+[tests/test_entrypoint.sh](../../tests/test_entrypoint.sh) extracts the real loop text from the entrypoint, mocks `run_steamcmd` and `sleep`, and asserts that persistent failure produces exactly three `Attempt N of 3...` lines and that immediate success produces exactly one. The suite requires no credentials, network access, or SteamCMD.
 
-These were documentation-time checks, not a committed automated suite. Production logic was not changed. A future fix should test exact total invocation counts, final delays, eventual success, helper failures, and immunity to ambient `ATTEMPTS`; see [testing](../testing.md).
+Residual gaps: the suite does not observe real client statuses, retry timing against a live service, or remote publication side effects; see [testing](../testing.md).

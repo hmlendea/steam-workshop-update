@@ -2,7 +2,7 @@
 
 ## GitHub Actions
 
-[Action metadata](../action.yml) defines a Docker action with required app/item/path inputs and an optional changenote. The platform supplies `INPUT_*` variables, workspace context, mounted content, and log collection. Credentials are separate caller-specified environment variables, conventionally sourced from GitHub Secrets; the script does not enforce that source.
+[Action metadata](../action.yml) defines a composite action with required app/item/path inputs and an optional changenote. The platform supplies workspace context, log collection, and the step environment; the metadata itself maps inputs to `INPUT_*` variables. Credentials are separate caller-specified environment variables, conventionally sourced from GitHub Secrets; the script does not enforce that source.
 
 There are no repository-owned workflow files, output declarations, GitHub API calls, artifact uploads, or release automation. A workflow author must choose triggers, prepare content, and manage permissions, serialization, and timeouts.
 
@@ -14,8 +14,8 @@ Username/password and optional generated code cross the command-argument boundar
 
 Failures return through client status and inherited text output. The wrapper does not classify permission errors, invalid item IDs, connectivity, throttling, or partial remote success.
 
-## Build-Time Services
+## Install-Time Services
 
-The [Docker build](../Dockerfile) pulls an upstream image, accesses apt repositories, and fetches a versioned helper from GitHub Releases. Build access is therefore broader than runtime Steam access. No checksum/signature verification, network allowlist, or retry policy is supplied for these downloads beyond tool defaults.
+The [installer](../scripts/install-steamcmd.sh) fetches the SteamCMD archive from the Steam CDN and a versioned helper from GitHub Releases, and may add a 32-bit runtime package through `apt-get` or `dnf`. Install access is therefore broader than runtime Steam access. No checksum/signature verification, network allowlist, or retry policy is supplied for these downloads beyond tool defaults and a three-attempt client bootstrap.
 
 For policy references, consult [privacy](../PRIVACY.md) and [security](../SECURITY.md). For implementation risks rather than policy duplication, consult [security analysis](./security.md).

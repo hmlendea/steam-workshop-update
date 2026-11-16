@@ -63,12 +63,13 @@ If you want to test TOTP authentication:
 
 ### Prerequisites
 
-- Docker installed and running
-- The `steam-workshop-update` Docker image built locally
+- A Linux host with Bash
+- SteamCMD installed through `scripts/install-steamcmd.sh` (the harness runs it)
+- Docker only if you prefer the local test image
 
 ```bash
-# Build the Docker image
-docker build -t steam-workshop-update:local .
+# Install SteamCMD and the TOTP helper
+bash scripts/install-steamcmd.sh
 ```
 
 ### Run Tests
@@ -125,8 +126,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build image
-        run: docker build -t steam-workshop-update:local .
       - name: Run integration tests
         env:
           STEAM_USERNAME: ${{ secrets.INTEGRATION_STEAM_USERNAME }}
@@ -141,7 +140,7 @@ jobs:
           STEAM_2FASEED=$STEAM_2FASEED
           STEAM_APPID=$STEAM_APPID
           STEAM_ITEMID=$STEAM_ITEMID
-          STEAM_WORKSPACE_PATH=/home/horatiu/Proiecte/github-actions/steam-workshop-update/tests/integration/test_content
+          STEAM_WORKSPACE_PATH="$GITHUB_WORKSPACE/tests/integration/test_content"
           EOF
           bash tests/integration/run_integration_tests.sh
 ```

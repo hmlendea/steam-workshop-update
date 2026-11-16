@@ -13,7 +13,11 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 # Configuration file path
-CONFIG_FILE="${INTEGRATION_CONFIG:-/home/horatiu/Proiecte/github-actions/steam-workshop-update/tests/integration/config.env}"
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+REPO_ROOT=$(cd "${SCRIPT_DIR}/../.." && pwd)
+ENTRYPOINT="${REPO_ROOT}/entrypoint.sh"
+INSTALL_SCRIPT="${REPO_ROOT}/scripts/install-steamcmd.sh"
+CONFIG_FILE="${INTEGRATION_CONFIG:-${SCRIPT_DIR}/config.env}"
 
 # Test results
 TESTS_RUN=0
@@ -172,15 +176,15 @@ test_workshop_update_success() {
 
     # Run the entrypoint script
     local output
-    output=$(/home/horatiu/Proiecte/github-actions/steam-workshop-update/entrypoint.sh 2>&1)
-    local exit_code=$?
+    local exit_code=0
+    output=$("$ENTRYPOINT" 2>&1) || exit_code=$?
 
     # Check exit code
     assert_exit_code "Workshop update exits with code 0 on success" "0" "$exit_code"
 
     # Verify output contains success indicators
-    assert_contains "Output shows attempt started" "$output" "Attempt 1 of 3"
-    assert_contains "Output shows success" "$output" "exit 0"
+    assert_contains "Output shows the generated descriptor" "$output" "workshopitem"
+    assert_contains "Output shows the first attempt" "$output" "Attempt 1 of 3"
 
     log_info "Workshop update completed successfully"
 }
@@ -198,8 +202,8 @@ test_workshop_update_with_changenote() {
     export GITHUB_WORKSPACE="$(dirname "$STEAM_WORKSPACE_PATH")"
 
     local output
-    output=$(/home/horatiu/Proiecte/github-actions/steam-workshop-update/entrypoint.sh 2>&1)
-    local exit_code=$?
+    local exit_code=0
+    output=$("$ENTRYPOINT" 2>&1) || exit_code=$?
 
     assert_exit_code "Workshop update with changenote exits with code 0" "0" "$exit_code"
     assert_contains "Output shows changenote in VDF" "$output" "changenote"
@@ -219,8 +223,8 @@ test_workshop_update_idempotency() {
 
     # First run
     local output1
-    output1=$(/home/horatiu/Proiecte/github-actions/steam-workshop-update/entrypoint.sh 2>&1)
-    local exit_code1=$?
+    local exit_code1=0
+    output1=$("$ENTRYPOINT" 2>&1) || exit_code1=$?
     assert_exit_code "First run succeeds" "0" "$exit_code1"
 
     # Small delay to avoid rate limiting
@@ -228,8 +232,8 @@ test_workshop_update_idempotency() {
 
     # Second run with same content
     local output2
-    output2=$(/home/horatiu/Proiecte/github-actions/steam-workshop-update/entrypoint.sh 2>&1)
-    local exit_code2=$?
+    local exit_code2=0
+    output2=$("$ENTRYPOINT" 2>&1) || exit_code2=$?
     assert_exit_code "Second run succeeds (idempotent)" "0" "$exit_code2"
 
     log_info "Idempotency test passed - both runs succeeded"
@@ -248,8 +252,8 @@ test_invalid_credentials() {
     export GITHUB_WORKSPACE="$(dirname "$STEAM_WORKSPACE_PATH")"
 
     local output
-    output=$(/home/horatiu/Proiecte/github-actions/steam-workshop-update/entrypoint.sh 2>&1)
-    local exit_code=$?
+    local exit_code=0
+    output=$("$ENTRYPOINT" 2>&1) || exit_code=$?
 
     # Should fail after 3 attempts
     assert_exit_code "Invalid credentials exits with code 2 after retries" "2" "$exit_code"
@@ -274,8 +278,8 @@ test_invalid_appid() {
     export GITHUB_WORKSPACE="$(dirname "$STEAM_WORKSPACE_PATH")"
 
     local output
-    output=$(/home/horatiu/Proiecte/github-actions/steam-workshop-update/entrypoint.sh 2>&1)
-    local exit_code=$?
+    local exit_code=0
+    output=$("$ENTRYPOINT" 2>&1) || exit_code=$?
 
     # Should fail (either validation or Steam API error)
     assert_exit_code "Invalid AppID exits with non-zero code" "2" "$exit_code"
@@ -297,8 +301,8 @@ test_invalid_itemid() {
     export GITHUB_WORKSPACE="$(dirname "$STEAM_WORKSPACE_PATH")"
 
     local output
-    output=$(/home/horatiu/Proiecte/github-actions/steam-workshop-update/entrypoint.sh 2>&1)
-    local exit_code=$?
+    local exit_code=0
+    output=$("$ENTRYPOINT" 2>&1) || exit_code=$?
 
     # Should fail (either validation or Steam API error)
     assert_exit_code "Invalid ItemID exits with non-zero code" "2" "$exit_code"
@@ -325,8 +329,8 @@ test_totp_authentication() {
     export GITHUB_WORKSPACE="$(dirname "$STEAM_WORKSPACE_PATH")"
 
     local output
-    output=$(/home/horatiu/Proiecte/github-actions/steam-workshop-update/entrypoint.sh 2>&1)
-    local exit_code=$?
+    local exit_code=0
+    output=$("$ENTRYPOINT" 2>&1) || exit_code=$?
 
     assert_exit_code "TOTP authentication succeeds" "0" "$exit_code"
     assert_contains "Output shows TOTP validation" "$output" "TOTP code validation passed"
@@ -347,8 +351,8 @@ test_credential_redaction_in_logs() {
     export GITHUB_WORKSPACE="$(dirname "$STEAM_WORKSPACE_PATH")"
 
     local output
-    output=$(/home/horatiu/Proiecte/github-actions/steam-workshop-update/entrypoint.sh 2>&1)
-    local exit_code=$?
+    local exit_code=0
+    output=$("$ENTRYPOINT" 2>&1) || exit_code=$?
 
     assert_exit_code "Workshop update succeeds" "0" "$exit_code"
 
@@ -377,6 +381,10 @@ main() {
 
     # Setup test fixture
     setup_test_fixture
+
+    # Install SteamCMD once for the whole run
+    log_info "Installing SteamCMD..."
+    bash "$INSTALL_SCRIPT"
 
     # Run tests
     echo ""

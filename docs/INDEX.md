@@ -2,7 +2,7 @@
 
 ## Repository Summary
 
-`steam-workshop-update` is a Docker-based GitHub Action that updates an existing Steam Workshop item through SteamCMD. A small Bash entrypoint validates credential presence, creates a VDF descriptor from workflow inputs, optionally generates a two-factor code, and invokes login/upload commands. This knowledge base traces actual data, control flow, state, failures, dependency boundaries, and safe modification points; it distinguishes wrapper guarantees from external-client assumptions and documents the current retry-counter defect.
+`steam-workshop-update` is a composite GitHub Action that updates an existing Steam Workshop item through SteamCMD. A small Bash entrypoint validates inputs and credentials, creates a VDF descriptor from workflow inputs, optionally generates a two-factor code, and invokes login/upload commands up to three times. SteamCMD is installed natively on the runner because containerised execution fails on GitHub's Ubuntu 26.04 runners. This knowledge base traces actual data, control flow, state, failures, dependency boundaries, and safe modification points; it distinguishes wrapper guarantees from external-client assumptions.
 
 ## Start Here
 
@@ -41,7 +41,7 @@ No root roadmap exists in the reviewed tree. No roadmap, privacy policy, securit
 ### Components And Behaviour
 
 - [Entrypoint orchestrator](./components/entrypoint.md) — Exact top-level sequencing, function contract, and side effects.
-- [Container image](./components/container-image.md) — Dependency installation, executable layout, launch arguments, and trust assumptions.
+- [Runner environment](./components/runner-environment.md) — Install steps, native execution rationale, dependency assumptions, and trust boundaries.
 - [External tool contracts](./components/external-tools.md) — SteamCMD and helper arguments, status handling, and delegated behaviour.
 - [Workshop update behaviour](./behaviour/workshop-updates.md) — User-visible prerequisites, outcomes, and non-features.
 

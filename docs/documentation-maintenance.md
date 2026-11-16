@@ -19,7 +19,7 @@ Keep the [master index](./INDEX.md) exhaustive. Every documentation file must ha
 | Inputs/defaults | [Configuration](./configuration.md), [data model](./data-model.md), [examples](./api-usage-examples.md) |
 | Command order/authentication | [Entrypoint](./components/entrypoint.md), [tool contracts](./components/external-tools.md), [flows](./flows/workshop-update.md) |
 | Retry/exit fix | [Retry analysis](./flows/retries-and-exit-status.md), [invariants](./invariants.md), [errors](./error-handling.md), [testing](./testing.md), [FAQ](./faq.md) |
-| Files/dependencies/runtime user | [Image component](./components/container-image.md), [dependencies](./dependencies.md), [state](./state-and-persistence.md), [security](./security.md) |
+| Files/dependencies/runtime user | [Runner environment](./components/runner-environment.md), [dependencies](./dependencies.md), [state](./state-and-persistence.md), [security](./security.md) |
 | Log or credential handling | [Logging](./logging.md), [security](./security.md), root policy accuracy |
 | New tests/workflows | [Testing](./testing.md), [deployment](./build-and-deployment.md), [structure](./repository-structure.md), [open questions](./ambiguities-and-open-questions.md) |
 

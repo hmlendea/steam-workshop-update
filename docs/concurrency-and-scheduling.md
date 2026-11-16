@@ -4,11 +4,11 @@
 
 The [entrypoint](../entrypoint.sh) runs one synchronous Bash control flow. Helper execution completes before SteamCMD starts; SteamCMD completes before status inspection and any retry delay. There are no background jobs, async tasks, queues, threads, or internal schedulers implemented here. External tools may have their own concurrency, which was not inspected.
 
-Descriptor generation occurs once before the loop. Each failed attempt incurs `sleep 2`, including a failed attempt that happens to terminate the loop. The [counter defect](./flows/retries-and-exit-status.md) makes the ordinary persistent-failure duration unbounded; a hanging client can also prevent progress independently of that defect.
+Descriptor generation occurs once before the loop. Each failed attempt except the last incurs `sleep 2`, so a persistent failure now completes in bounded time ([retry policy](./flows/retries-and-exit-status.md)); a hanging client can still prevent progress independently.
 
 ## Cross-Invocation Hazards
 
-Separate workflow runs can update the same Workshop item concurrently. There is no distributed lock, lease, item-version check, or conflict handling. Sharing a filesystem in manual container setups can also make multiple processes overwrite the same fixed descriptor and client state.
+Separate workflow runs can update the same Workshop item concurrently. There is no distributed lock, lease, item-version check, or conflict handling. On a persistent self-hosted runner, sharing `${STEAMCMD_ROOT}` across concurrent jobs can also make multiple processes overwrite the same descriptor and client state.
 
 The repository defines no workflow triggers or scheduling policy. The calling workflow owns cron/manual/push triggers, `timeout-minutes`, job ordering, and GitHub Actions `concurrency` groups. Prefer serialization by target item and explicit job timeouts; cancellation can interrupt an upload and does not undo remote effects.
 
