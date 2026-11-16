@@ -5,10 +5,6 @@ branding:
   icon: upload-cloud
   color: purple
 
-runs:
-  using: 'docker'
-  image: 'Dockerfile'
-
 inputs:
   appid:
     description: 'Steam App ID'
@@ -23,3 +19,19 @@ inputs:
     description: 'Changenote of this update'
     required: false
     default: 'Uploaded using the [url=https://github.com/hmlendea/steam-workshop-update]hmlendea/steam-workshop-update[/url] GitHub Actions workflow.'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install SteamCMD
+      shell: bash
+      run: bash "${GITHUB_ACTION_PATH}/scripts/install-steamcmd.sh"
+
+    - name: Update Workshop item
+      shell: bash
+      env:
+        INPUT_APPID: ${{ inputs.appid }}
+        INPUT_ITEMID: ${{ inputs.itemid }}
+        INPUT_PATH: ${{ inputs.path }}
+        INPUT_CHANGENOTE: ${{ inputs.changenote }}
+      run: bash "${GITHUB_ACTION_PATH}/entrypoint.sh"

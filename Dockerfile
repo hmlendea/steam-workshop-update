@@ -1,15 +1,25 @@
-FROM cm2network/steamcmd:root as steam-workshop-update
-RUN apt-get -y update && apt-get install -y wget --no-install-recommends && apt-get clean && rm -rf /var/lib/apt/lists/*
+# Local test image only.
+#
+# GitHub Actions runs this action as a composite action so that SteamCMD runs
+# natively on the runner. See scripts/install-steamcmd.sh for why the client is
+# no longer executed through the runner's Docker daemon.
+FROM ubuntu:24.04
 
-ENV STEAM_USERNAME=
-ENV STEAM_PASSWORD=
-ENV STEAM_2FASEED=
+ARG DEBIAN_FRONTEND=noninteractive
 
-COPY entrypoint.sh /entrypoint.sh
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates curl tar lib32gcc-s1 && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN chmod +x /entrypoint.sh && \
-wget https://github.com/hmlendea/steam-totp/releases/download/v1.0.1/steam-totp_1.0.1_linux-x64 -O /home/steam/steam-totp && \
-chmod +x /home/steam/steam-totp
+ENV STEAMCMD_ROOT=/opt/steamcmd
+ENV GITHUB_WORKSPACE=/workspace
 
-CMD ["."]
-ENTRYPOINT ["/entrypoint.sh"]
+COPY scripts/install-steamcmd.sh /opt/action/scripts/install-steamcmd.sh
+COPY entrypoint.sh /opt/action/entrypoint.sh
+
+RUN chmod +x /opt/action/scripts/install-steamcmd.sh /opt/action/entrypoint.sh && \
+    bash /opt/action/scripts/install-steamcmd.sh
+
+WORKDIR /workspace
+
+ENTRYPOINT ["/opt/action/entrypoint.sh"]

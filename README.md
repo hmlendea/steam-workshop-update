@@ -4,7 +4,7 @@
 
 # Steam Workshop Update
 
-A Docker-based GitHub Action that updates an existing Steam Workshop item through SteamCMD. The action validates credentials, generates a VDF descriptor from workflow inputs, optionally creates a two-factor authentication code, and invokes SteamCMD to upload the update.
+A composite GitHub Action that installs Valve's SteamCMD client natively on the runner and updates an existing Steam Workshop item. The action validates its inputs, generates a VDF descriptor, optionally creates a two-factor authentication code, invokes SteamCMD, and retries failed uploads.
 
 ## 📑 Table of Contents
 
@@ -23,6 +23,7 @@ A Docker-based GitHub Action that updates an existing Steam Workshop item throug
   - [Requirements](#requirements)
   - [Setup](#setup)
   - [Build](#build)
+  - [Test](#test)
   - [Docker](#docker)
   - [Dependencies](#dependencies)
 - [Project Structure](#-project-structure)
@@ -44,7 +45,9 @@ A Docker-based GitHub Action that updates an existing Steam Workshop item throug
 
 - Updates an existing Steam Workshop item with new content
 - Supports Steam Guard two-factor authentication via a standard TOTP seed
-- Repeats a failed upload after a two-second delay while the job remains running
+- Retries a failed upload up to three attempts before failing the step
+- Validates inputs and rejects paths outside the workflow workspace
+- Redacts passwords, seeds, and generated codes from command output
 - Accepts an optional changenote for each update
 
 ## 🚀 Usage
@@ -71,8 +74,8 @@ The workflow must prepare the content directory, supply the credentials as secre
 
 - The action updates an existing Workshop item and cannot create a new item.
 - A successful step reflects a zero SteamCMD exit status; the published item is not verified independently.
-- Persistent failures normally repeat until the job is cancelled or times out, because the retry counter is reset after each failure.
-- Input values, content directory existence, and VDF string escaping are not validated.
+- SteamCMD is downloaded from the Steam CDN at install time without a pinned version or checksum.
+- A hung SteamCMD client can stall the step, so a caller-level job timeout remains necessary.
 - Steam account permissions, item ownership, and network access are required but not checked by the action.
 
 ## 📦 Installation
@@ -106,16 +109,17 @@ Supply `STEAM_USERNAME`, `STEAM_PASSWORD`, and optionally `STEAM_2FASEED` throug
 
 | Component | Supported Versions | Notes |
 |-----------|--------------------|-------|
-| GitHub Actions runner | Linux runners that support Docker container actions | Declared as a Docker action (`using: docker`). |
-| SteamCMD | Image-provided `cm2network/steamcmd` runtime | Selected by the image base, not by an action input. |
+| GitHub Actions runner | Linux runners with composite action support | Declared as a composite action (`using: composite`). |
+| 32-bit C runtime | `lib32gcc-s1` or `glibc.i686` | Required by the i386 SteamCMD client; installed when missing. |
+| SteamCMD | Steam CDN `steamcmd_linux.tar.gz` | Downloaded and bootstrapped at install time. |
 
 ## 🔌 Integrations
 
 | Integration | Compatibility | Purpose | Required |
 |-------------|---------------|---------|----------|
-| SteamCMD | Docker action runtime | Authenticates with Steam and uploads Workshop content. | Yes |
-| steam-totp | Pinned 1.0.1 Linux x64 helper | Generates the two-factor authentication code from the seed. | No |
-| GitHub Actions | Docker-compatible runner | Executes the action and supplies inputs and secrets. | Yes |
+| SteamCMD | Downloaded from the Steam CDN | Authenticates with Steam and uploads Workshop content. | Yes |
+| steam-totp | Pinned release 1.0.1 Linux x64 | Generates the two-factor authentication code from the seed. | No |
+| GitHub Actions | Linux runner with composite action support | Executes the action and supplies inputs and secrets. | Yes |
 
 ## 🔐 Authentication and Authorisation
 
@@ -129,44 +133,43 @@ For the detailed description of how the application handles privacy and personal
 
 | Data | Purpose | Storage | Retention | Optional |
 |------|---------|-----------|-----------|----------|
-| Steam credentials | Steam authentication | Workflow environment and SteamCMD process | Workflow execution | Username and password required; TOTP seed optional |
-| Workshop metadata | Select and describe the upload | Workflow workspace and SteamCMD descriptor | Workflow execution | Changenote optional |
+| Steam credentials | Steam authentication | Runner environment and SteamCMD process | Workflow execution | Username and password required; TOTP seed optional |
+| Workshop metadata | Select and describe the upload | Runner temporary directory and SteamCMD descriptor | Workflow execution | Changenote optional |
 
 ## 🛠️ Development
 
 ### Requirements
 
-- [Docker](https://docs.docker.com/get-docker/)
+- Bash and `bash -n` for syntax checks
+- A Linux environment for native execution; Docker only if you want the local test image
 
 ### Setup
 
-Clone the repository and build the Docker image locally:
+Clone the repository:
 
 ```bash
 git clone https://github.com/hmlendea/steam-workshop-update.git
 cd steam-workshop-update
-docker build -t steam-workshop-update .
 ```
 
 ### Build
 
+The production action is composite and installs SteamCMD directly on the runner, so there is no build step. `Dockerfile` builds a local test image only:
+
 ```bash
 docker build -t steam-workshop-update .
+```
+
+### Test
+
+```bash
+bash tests/test_entrypoint.sh
 ```
 
 ### Docker
 
 ```bash
-docker run --rm \
-  --env STEAM_USERNAME \
-  --env STEAM_PASSWORD \
-  --env STEAM_2FASEED \
-  --env INPUT_APPID \
-  --env INPUT_ITEMID \
-  --env INPUT_CHANGENOTE \
-  --env INPUT_PATH \
-  --volume "$PWD":/github/workspace \
-  steam-workshop-update
+docker run --rm steam-workshop-update
 ```
 
 A run without credentials exits with status `1`, which validates only the early credential check.
@@ -175,13 +178,14 @@ A run without credentials exits with status `1`, which validates only the early 
 
 | Package | Version | Scope | Purpose |
 |---------|---------|-------|---------|
-| `cm2network/steamcmd` | Image base | Runtime | Provides SteamCMD for authentication and upload. |
+| SteamCMD | Steam CDN archive | Runtime | Authenticates with Steam and uploads Workshop content. |
 | `steam-totp` | 1.0.1 | Optional | Generates a Steam two-factor authentication code. |
-| `wget` | Distribution package | Build | Downloads the pinned TOTP helper during the image build. |
+| 32-bit C runtime | Distribution package | Runtime | Runs the i386 SteamCMD client. |
+| `curl` or `wget`, `tar` | Runner image | Build and runtime | Downloads and extracts the client and helper. |
 
 ## 🗂️ Project Structure
 
-The repository contains the action metadata, Docker image definition, entrypoint, policies, and supporting documentation.
+The repository contains the action metadata, the SteamCMD installer, the entrypoint, the local test image, the test suite, policies, and supporting documentation.
 
 ### Directories
 
@@ -189,10 +193,12 @@ The repository contains the action metadata, Docker image definition, entrypoint
 |-----------|---------|
 | `.github/` | Repository hosting metadata and the funding configuration. |
 | `docs/` | Detailed architecture, behaviour, configuration, security, and testing documentation. |
+| `scripts/` | SteamCMD and helper installation performed by the first action step. |
+| `tests/` | Unit and integration test scripts for the entrypoint and installer. |
 
 ## 🏗️ Architecture
 
-Steam Workshop Update is a Docker-based GitHub Action that updates an existing Steam Workshop item through SteamCMD.
+Steam Workshop Update is a composite GitHub Action that installs Valve's SteamCMD client natively on the runner and drives it from a Bash entrypoint to update an existing Workshop item.
 
 See the [Architecture Documentation](./ARCHITECTURE.md) for the system context, principal components, runtime flows, ownership boundaries, dependencies, constraints, and extension points.
 
@@ -247,7 +253,7 @@ See the [Code of Conduct](./CODE_OF_CONDUCT.md) for the standards of conduct exp
 
 ## 🔒 Security
 
-Steam Workshop Update delegates authentication and publication to SteamCMD and does not implement its own credential storage, transport security, or remote state verification.
+Steam Workshop Update delegates authentication and publication to SteamCMD, downloads its client and helper over HTTPS at install time, and redacts credentials from the output it prints.
 
 For information on reporting security vulnerabilities, see the [Security Policy](./SECURITY.md).
 

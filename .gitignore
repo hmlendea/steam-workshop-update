@@ -1,0 +1,12 @@
+# Integration test configuration with real credentials
+tests/integration/config.env
+
+# Docker
+.docker/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp

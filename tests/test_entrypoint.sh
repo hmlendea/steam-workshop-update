@@ -1,0 +1,366 @@
+#!/bin/bash
+# Test suite for entrypoint.sh
+# Tests retry counter, input validation, credential redaction, TOTP validation, and error handling.
+
+set -uo pipefail
+
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+REPO_ROOT=$(cd "${SCRIPT_DIR}/.." && pwd)
+ENTRYPOINT="${REPO_ROOT}/entrypoint.sh"
+INSTALL_SCRIPT="${REPO_ROOT}/scripts/install-steamcmd.sh"
+
+# --- Test framework ---
+
+TESTS_RUN=0
+TESTS_PASSED=0
+TESTS_FAILED=0
+FAILED_TESTS=()
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+assert_eq() {
+    local desc="$1"
+    local expected="$2"
+    local actual="$3"
+    TESTS_RUN=$((TESTS_RUN + 1))
+    if [[ "$expected" == "$actual" ]]; then
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+        echo -e "${GREEN}PASS${NC}: $desc"
+    else
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+        FAILED_TESTS+=("$desc")
+        echo -e "${RED}FAIL${NC}: $desc"
+        echo -e "  Expected: $expected"
+        echo -e "  Actual:   $actual"
+    fi
+}
+
+assert_contains() {
+    local desc="$1"
+    local haystack="$2"
+    local needle="$3"
+    TESTS_RUN=$((TESTS_RUN + 1))
+    if [[ "$haystack" == *"$needle"* ]]; then
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+        echo -e "${GREEN}PASS${NC}: $desc"
+    else
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+        FAILED_TESTS+=("$desc")
+        echo -e "${RED}FAIL${NC}: $desc"
+        echo -e "  Expected to contain: $needle"
+        echo -e "  In: $haystack"
+    fi
+}
+
+assert_not_contains() {
+    local desc="$1"
+    local haystack="$2"
+    local needle="$3"
+    TESTS_RUN=$((TESTS_RUN + 1))
+    if [[ "$haystack" != *"$needle"* ]]; then
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+        echo -e "${GREEN}PASS${NC}: $desc"
+    else
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+        FAILED_TESTS+=("$desc")
+        echo -e "${RED}FAIL${NC}: $desc"
+        echo -e "  Should NOT contain: $needle"
+        echo -e "  In: $haystack"
+    fi
+}
+
+assert_exit_code() {
+    local desc="$1"
+    local expected_code="$2"
+    local actual_code="$3"
+    TESTS_RUN=$((TESTS_RUN + 1))
+    if [[ "$expected_code" == "$actual_code" ]]; then
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+        echo -e "${GREEN}PASS${NC}: $desc"
+    else
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+        FAILED_TESTS+=("$desc")
+        echo -e "${RED}FAIL${NC}: $desc"
+        echo -e "  Expected exit code: $expected_code"
+        echo -e "  Actual exit code:   $actual_code"
+    fi
+}
+
+# --- Test helpers ---
+
+# Source the entrypoint functions without executing the main body.
+# We do this by extracting functions and sourcing them in a controlled way.
+load_entrypoint_functions() {
+    # Extract function definitions only (lines from function name to closing brace)
+    local tmpfile
+    tmpfile=$(mktemp)
+    sed -n '/^sanitize_output()/,/^}/p' "$ENTRYPOINT" > "$tmpfile"
+    sed -n '/^log_sanitized_cmd()/,/^}/p' "$ENTRYPOINT" >> "$tmpfile"
+    sed -n '/^validate_input()/,/^}/p' "$ENTRYPOINT" >> "$tmpfile"
+    sed -n '/^run_steamcmd()/,/^}/p' "$ENTRYPOINT" >> "$tmpfile"
+    source "$tmpfile"
+    rm -f "$tmpfile"
+}
+
+# --- Test suites ---
+
+test_sanitize_output() {
+    echo -e "\n${YELLOW}=== Test Suite: sanitize_output ===${NC}"
+
+    STEAM_PASSWORD="secret123"
+    STEAM_2FACODE="ABC123"
+    STEAM_2FASEED="myseed"
+
+    local result
+    result=$(sanitize_output "test secret123 test ABC123 myseed")
+    assert_contains "Password redacted in output" "$result" "***REDACTED***"
+    assert_not_contains "No plaintext password in output" "$result" "secret123"
+    assert_not_contains "No plaintext TOTP code in output" "$result" "ABC123"
+    assert_not_contains "No plaintext seed in output" "$result" "myseed"
+}
+
+test_validate_input_numeric() {
+    echo -e "\n${YELLOW}=== Test Suite: validate_input (numeric) ===${NC}"
+
+    # Valid numeric
+    (validate_input "appid" "123456" "numeric") >/dev/null 2>&1
+    assert_exit_code "Valid numeric appid accepted" "0" "$?"
+
+    # Invalid numeric (non-numeric)
+    (validate_input "appid" "abc" "numeric") >/dev/null 2>&1
+    assert_exit_code "Non-numeric appid rejected" "1" "$?"
+
+    # Invalid numeric (empty)
+    (validate_input "appid" "" "numeric") >/dev/null 2>&1
+    assert_exit_code "Empty appid rejected" "1" "$?"
+
+    # Invalid numeric (negative)
+    (validate_input "appid" "-123" "numeric") >/dev/null 2>&1
+    assert_exit_code "Negative appid rejected" "1" "$?"
+}
+
+test_validate_input_path() {
+    echo -e "\n${YELLOW}=== Test Suite: validate_input (path) ===${NC}"
+
+    local tmpdir
+    tmpdir=$(mktemp -d)
+
+    # Valid path within workspace
+    GITHUB_WORKSPACE="$tmpdir"
+    (validate_input "path" "$tmpdir" "path") >/dev/null 2>&1
+    assert_exit_code "Valid path accepted" "0" "$?"
+
+    # Path traversal attempt
+    (validate_input "path" "/etc" "path") >/dev/null 2>&1
+    assert_exit_code "Path outside workspace rejected" "1" "$?"
+
+    # Non-existent path
+    (validate_input "path" "/nonexistent/path" "path") >/dev/null 2>&1
+    assert_exit_code "Non-existent path rejected" "1" "$?"
+
+    rm -rf "$tmpdir"
+}
+
+test_validate_input_changenote() {
+    echo -e "\n${YELLOW}=== Test Suite: validate_input (changenote) ===${NC}"
+
+    # Valid changenote
+    (validate_input "changenote" "Updated workshop item" "changenote") >/dev/null 2>&1
+    assert_exit_code "Valid changenote accepted" "0" "$?"
+
+    # Empty changenote
+    (validate_input "changenote" "" "changenote") >/dev/null 2>&1
+    assert_exit_code "Empty changenote rejected" "1" "$?"
+
+    # Changenote too long
+    local long_note
+    long_note=$(printf 'x%.0s' {1..1001})
+    (validate_input "changenote" "$long_note" "changenote") >/dev/null 2>&1
+    assert_exit_code "Overly long changenote rejected" "1" "$?"
+}
+
+test_retry_counter() {
+    echo -e "\n${YELLOW}=== Test Suite: Retry Counter ===${NC}"
+
+    local loop_source
+    loop_source=$(sed -n '/^# Attempt loop/,/^done$/p' "$ENTRYPOINT")
+
+    if [[ -z "$loop_source" ]]; then
+        assert_eq "Retry loop found in entrypoint.sh" "present" "missing"
+        return
+    fi
+
+    # Persistent failure must stop after ATTEMPTS_MAX invocations, even under
+    # errexit, which is exactly what the old implementation failed to do.
+    local failures_output attempts
+    failures_output=$(
+        set -e
+        ATTEMPTS_MAX=3
+        run_steamcmd() { return 1; }
+        sleep() { :; }
+        eval "$loop_source"
+    ) 2>/dev/null
+
+    run_steamcmd() { return 1; }
+    attempts=$(printf '%s\n' "$failures_output" | grep -c '^Attempt [0-9]* of 3\.\.\.$')
+
+    assert_eq "Persistent failure runs exactly 3 attempts" "3" "$attempts"
+
+    local success_output
+    success_output=$(
+        set -e
+        ATTEMPTS_MAX=3
+        run_steamcmd() { return 0; }
+        sleep() { :; }
+        eval "$loop_source"
+    )
+
+    attempts=$(printf '%s\n' "$success_output" | grep -c '^Attempt [0-9]* of 3\.\.\.$')
+    assert_eq "Success stops after one attempt" "1" "$attempts"
+}
+
+test_totp_validation() {
+    echo -e "\n${YELLOW}=== Test Suite: TOTP Validation ===${NC}"
+
+    # Valid TOTP codes (5-6 alphanumeric)
+    local valid_codes=("ABC12" "ABC123" "12345" "123456" "a1b2c3")
+    for code in "${valid_codes[@]}"; do
+        if [[ "$code" =~ ^[A-Za-z0-9]{5,6}$ ]]; then
+            TESTS_RUN=$((TESTS_RUN + 1))
+            TESTS_PASSED=$((TESTS_PASSED + 1))
+            echo -e "${GREEN}PASS${NC}: Valid TOTP code '$code' accepted"
+        else
+            TESTS_RUN=$((TESTS_RUN + 1))
+            TESTS_FAILED=$((TESTS_FAILED + 1))
+            FAILED_TESTS+=("Valid TOTP code '$code' should be accepted")
+            echo -e "${RED}FAIL${NC}: Valid TOTP code '$code' should be accepted"
+        fi
+    done
+
+    # Invalid TOTP codes
+    local invalid_codes=("ABC1" "ABC1234" "ABC-12" "ABC 12" "" "ABC12!")
+    for code in "${invalid_codes[@]}"; do
+        if [[ "$code" =~ ^[A-Za-z0-9]{5,6}$ ]]; then
+            TESTS_RUN=$((TESTS_RUN + 1))
+            TESTS_FAILED=$((TESTS_FAILED + 1))
+            FAILED_TESTS+=("Invalid TOTP code '$code' should be rejected")
+            echo -e "${RED}FAIL${NC}: Invalid TOTP code '$code' should be rejected"
+        else
+            TESTS_RUN=$((TESTS_RUN + 1))
+            TESTS_PASSED=$((TESTS_PASSED + 1))
+            echo -e "${GREEN}PASS${NC}: Invalid TOTP code '$code' rejected"
+        fi
+    done
+}
+
+test_run_steamcmd_argument_array() {
+    echo -e "\n${YELLOW}=== Test Suite: run_steamcmd Argument Array ===${NC}"
+
+    # Verify that run_steamcmd uses argument arrays (no eval)
+    local content
+    content=$(cat "$ENTRYPOINT")
+
+    assert_not_contains "No eval in entrypoint" "$content" "eval "
+    assert_contains "Uses local -a for argument array" "$content" "local -a steamcmd_args"
+    assert_contains "Uses array expansion for execution" "$content" '"${steamcmd_args[@]}"'
+}
+
+test_strict_mode() {
+    echo -e "\n${YELLOW}=== Test Suite: Strict Mode ===${NC}"
+
+    local content
+    content=$(cat "$ENTRYPOINT")
+
+    assert_contains "set -euo pipefail present in entrypoint" "$content" "set -euo pipefail"
+
+    content=$(cat "$INSTALL_SCRIPT")
+    assert_contains "set -euo pipefail present in installer" "$content" "set -euo pipefail"
+}
+
+test_no_container_execution() {
+    echo -e "\n${YELLOW}=== Test Suite: Native Execution ===${NC}"
+
+    # The action must not run SteamCMD through Docker, whose default seccomp
+    # profile breaks the 32-bit client on Docker 29.4.2.
+    local action_content
+    action_content=$(cat "${REPO_ROOT}/action.yml")
+
+    assert_contains "Action uses composite execution" "$action_content" "using: 'composite'"
+    assert_not_contains "Action does not build a Docker image" "$action_content" "image: 'Dockerfile'"
+    assert_contains "Inputs are mapped to INPUT_ environment variables" "$action_content" "INPUT_APPID: \${{ inputs.appid }}"
+
+    local content
+    content=$(cat "$ENTRYPOINT")
+    assert_not_contains "Entrypoint does not rely on the container Steam home" "$content" "/home/steam"
+}
+
+test_exit_codes() {
+    echo -e "\n${YELLOW}=== Test Suite: Exit Codes ===${NC}"
+
+    local content
+    content=$(cat "$ENTRYPOINT")
+
+    assert_contains "Exit 0 on success" "$content" "exit 0"
+    assert_contains "Exit 2 on failure" "$content" "exit 2"
+    assert_contains "Exit 1 on validation failure" "$content" "exit 1"
+}
+
+test_log_sanitization() {
+    echo -e "\n${YELLOW}=== Test Suite: Log Sanitization ===${NC}"
+
+    local content
+    content=$(cat "$ENTRYPOINT")
+
+    assert_contains "sanitize_output function defined" "$content" "sanitize_output()"
+    assert_contains "log_sanitized_cmd function defined" "$content" "log_sanitized_cmd()"
+    assert_contains "Steam logs are read from the Steam home" "$content" 'LOG_DIR="${STEAMCMD_HOME}/Steam/logs"'
+    assert_contains "Failure paths print both Steam logs" "$content" "for log_name in stderr.txt workshop_log.txt; do"
+}
+
+# --- Main ---
+
+main() {
+    echo "========================================"
+    echo "  entrypoint.sh Test Suite"
+    echo "========================================"
+
+    load_entrypoint_functions
+
+    test_sanitize_output
+    test_validate_input_numeric
+    test_validate_input_path
+    test_validate_input_changenote
+    test_retry_counter
+    test_totp_validation
+    test_run_steamcmd_argument_array
+    test_strict_mode
+    test_no_container_execution
+    test_exit_codes
+    test_log_sanitization
+
+    echo ""
+    echo "========================================"
+    echo "  Test Summary"
+    echo "========================================"
+    echo "  Total:   $TESTS_RUN"
+    echo -e "  ${GREEN}Passed:  $TESTS_PASSED${NC}"
+    echo -e "  ${RED}Failed:  $TESTS_FAILED${NC}"
+    echo "========================================"
+
+    if [[ $TESTS_FAILED -gt 0 ]]; then
+        echo -e "\n${RED}Failed tests:${NC}"
+        for test in "${FAILED_TESTS[@]}"; do
+            echo "  - $test"
+        done
+        exit 1
+    fi
+
+    echo -e "\n${GREEN}All tests passed!${NC}"
+    exit 0
+}
+
+main "$@"

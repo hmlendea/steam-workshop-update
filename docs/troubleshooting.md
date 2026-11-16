@@ -2,16 +2,17 @@
 
 | Symptom | Causal Explanation | Safe Next Check |
 |---|---|---|
-| Fatal missing username/password | Empty environment; Docker defaults are empty | Confirm secret binding names without printing values |
-| Job repeatedly prints `Attempt 2 of 3...` | Counter resets to one after each failure | Stop job; inspect sanitized earlier output; see [retry defect](./flows/retries-and-exit-status.md) |
-| No final Steam log dump | Infinite failure loop or blocked child prevents terminal block | Check job timeout/client progress; do not assume logs were filtered |
-| Helper failure before any login | Seed branch returns one on helper nonzero | Verify installed helper compatibility and redacted stderr |
-| Login fails despite helper zero | Code format unchecked, account/challenge/time conditions external | Check clock and authorized helper/account setup; never share seed/code |
-| Invalid descriptor/client parse error | Unescaped quotes/newlines or incomplete input | Review sanitized generated VDF against [schema](./data-model.md) |
-| Content folder missing | Workspace/path prefix mismatch or content not prepared | Confirm mounted workspace and relative directory before calling action |
-| VDF write error followed by login | Runtime script ignores write status | Inspect permissions and fixed target; avoid stale-file reuse |
+| Fatal missing username/password | Empty or unbound environment | Confirm secret binding names without printing values |
+| `Steamcmd needs to be online to update` | Client cannot reach Steam, historically Docker 29.4.2's seccomp deny of `socketcall(2)` for the i386 client | Confirm the action revision is one that runs natively; see [runner environment](./components/runner-environment.md) |
+| `FATAL: SteamCMD was not found` | Installer step skipped or failed | Confirm the install step succeeded and `${STEAMCMD_ROOT}` is writable |
+| Installer fails adding 32-bit runtime | No loader and no permitted package install | Preinstall `lib32gcc-s1`/`glibc.i686` on self-hosted runners |
+| Job prints `Attempt 3 of 3...` then fails | Three attempts exhausted | Inspect the dumped Steam logs and the [retry policy](./flows/retries-and-exit-status.md) |
+| Helper failure before any login | Seed branch returns one on helper nonzero or malformed code | Verify installed helper compatibility and redacted stderr |
+| Login fails despite helper zero | Account/challenge/time conditions external | Check clock and authorized helper/account setup; never share seed/code |
+| Invalid descriptor/client parse error | Unescaped quotes/newlines in changenote | Review sanitized generated VDF against [schema](./data-model.md) |
+| `FATAL: Input path ...` | Content path missing or outside the workspace | Confirm the workspace checkout and relative directory |
 | Upload permission failure | App/item/account assumptions delegated to Steam | Verify target ownership and authorization outside action |
-| Build fails fetching helper/packages | Build-time network/provenance dependencies | Inspect build error, registry/apt/GitHub access, and asset URL |
+| Install fails fetching client/helper | Install-time network or provenance dependency | Inspect the download URL, CDN access, and GitHub Releases access |
 | Local Docker run immediately exits one | No credentials supplied | Treat as validation smoke check, not failed upload integration |
 | Step succeeds but remote state is unexpected | Success is client zero status only | Independently inspect intended Workshop item/content |
 
