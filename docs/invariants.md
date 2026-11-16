@@ -5,24 +5,24 @@
 | Contract | Evidence | Dependants |
 |---|---|---|
 | Empty username/password prevents client invocation | Ordered checks in [entrypoint](../entrypoint.sh) | Callers diagnosing configuration failures |
-| VDF precedes client invocation and uses fixed pathname | Heredoc before loop; `+workshop_build_item` argument | Client path resolution and image permissions |
+| Invalid inputs are rejected before any upload | `validate_input` calls before descriptor generation | Callers diagnosing configuration failures |
+| VDF precedes client invocation and uses a stable pathname | Heredoc before loop; `+workshop_build_item` argument | Client path resolution |
 | Credentials are absent from intentionally generated VDF fields | Four-field heredoc | Descriptor disclosure assumptions; caller values can still contain sensitive text |
-| Nonempty seed requires successful helper status before client call | `run_steamcmd` early return | Authentication flow and secret handling |
+| Nonempty seed requires a valid helper result before client call | `run_steamcmd` early return | Authentication flow and secret handling |
 | Every seeded invocation regenerates its code | Helper call inside function | Retry behaviour and time assumptions |
-| Client zero status ends the loop successfully | Immediate `$?` check and success flag | GitHub step success |
+| Client zero status ends the loop successfully | `if run_steamcmd` check and success flag | GitHub step success |
+| Failures stop after three attempts | Loop counter tested by [tests/test_entrypoint.sh](../tests/test_entrypoint.sh) | Job duration and output volume |
 | No structured output is produced | No output declaration or output-file write | Downstream steps must use status, not invented result fields |
 
 ## Assumptions, Not Enforced Invariants
 
 | Desired Property | Current Limitation |
 |---|---|
-| Finite failure budget | Counter references wrong variable; ordinary persistent failure is unbounded |
-| Valid descriptor and content path | No escaping, validation, path containment, or write-status gate |
-| Valid generated code | Helper status checked, stdout format unchecked |
+| Valid descriptor content | No VDF escaping for quotes or newlines |
 | Exactly one publication | Full command repeated; no reconciliation or idempotency token |
 | No overlapping updates | No lock; caller must serialize |
-| No secret disclosure | No local redaction; external output and command arguments may expose data |
-| Complete cleanup | No cleanup trap; runner/client lifecycle governs residual data |
+| No secret disclosure | `sanitize_output` redacts known credential values in wrapper output; command arguments and external output remain a boundary |
+| Complete cleanup | No cleanup trap; installed client and session files persist for the runner lifetime |
 | Published content equals a snapshot | No content copy, digest, or freeze |
 
 ## Safe Modification Rule

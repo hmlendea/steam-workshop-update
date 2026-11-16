@@ -2,7 +2,7 @@
 
 ## Action Inputs
 
-[Action metadata](../action.yml) declares these strings; GitHub Actions supplies their `INPUT_*` counterparts to the Docker action. The [entrypoint](../entrypoint.sh) reads the environment, not positional arguments.
+[Action metadata](../action.yml) declares these strings and maps them to their `INPUT_*` counterparts inside the composite steps. The [entrypoint](../entrypoint.sh) reads the environment, not positional arguments.
 
 | Workflow Input | Environment Consumer | Required In Metadata | Default | Transformation |
 |---|---|---|---|---|
@@ -17,7 +17,7 @@ Exact metadata default:
 Uploaded using the [url=https://github.com/hmlendea/steam-workshop-update]hmlendea/steam-workshop-update[/url] GitHub Actions workflow.
 ```
 
-The script does not validate any `INPUT_*` value, check directory existence, verify numeric IDs, escape VDF strings, or apply the metadata default itself. A direct Docker invocation bypasses metadata defaults. Absolute paths are not treated as replacements for the workspace prefix; traversal components are not rejected.
+The script validates that `INPUT_APPID` and `INPUT_ITEMID` are numeric, that `${GITHUB_WORKSPACE}/${INPUT_PATH}` exists and resolves inside the workspace, and that `INPUT_CHANGENOTE` is printable and at most 1000 characters. It does not escape VDF strings or apply the metadata default itself; a direct script invocation bypasses metadata defaults. Absolute paths are not treated as replacements for the workspace prefix, though `realpath` containment rejects traversal outside the workspace.
 
 ## Credentials And Runtime Environment
 
@@ -26,14 +26,15 @@ The script does not validate any `INPUT_*` value, check directory existence, ver
 | `STEAM_USERNAME` | Caller environment, normally GitHub secret | Empty/unset exits one before file creation |
 | `STEAM_PASSWORD` | Caller environment, normally GitHub secret | Empty/unset exits one after username check |
 | `STEAM_2FASEED` | Optional caller secret | Empty skips helper; nonempty invokes helper on every attempt |
-| `GITHUB_WORKSPACE` | Runner, or explicit local setup | Prefix for content path; no validation |
+| `GITHUB_WORKSPACE` | Runner, or explicit local setup | Prefix for content path; the resolved path must stay inside it |
 | `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT` | Exported as `1` in seeded branch | Inherited by helper and subsequent child processes |
-| `ATTEMPTS` | Not a documented input | Accidentally influences retry counter; must not be treated as supported configuration |
+| `STEAMCMD_ROOT` | Optional override, default `${RUNNER_TEMP}/steamcmd` | Client installation, descriptor, and helper location |
+| `STEAMCMD_HOME` | Optional override, default `${STEAMCMD_ROOT}/home` | Steam session home and log directory |
 
-The [image](../Dockerfile) initializes all three credential variables to empty values. Caller environment values must replace these for an actual upload. There is no configuration file, CLI parser, secret-store integration, or precedence merge implemented in the script.
+Credentials must be supplied through the calling step's `env`, because composite actions do not forward caller environment implicitly to inner steps. There is no configuration file, CLI parser, secret-store integration, or precedence merge implemented in the script.
 
 ## Fixed Values
 
-The VDF lives at `/home/steam/workshop.vdf`; SteamCMD at `/home/steam/steamcmd/steamcmd.sh`; the helper at `/home/steam/steam-totp`. `ATTEMPTS_MAX=3` and a two-second post-failure delay are hardcoded. These are not action inputs. The default container argument `.` is ignored by the script.
+The VDF lives at `${STEAMCMD_ROOT}/workshop.vdf`; SteamCMD at `${STEAMCMD_ROOT}/install/steamcmd.sh`; the helper at `${STEAMCMD_ROOT}/steam-totp`. `ATTEMPTS_MAX=3` and a two-second post-failure delay are hardcoded. These are not action inputs.
 
 Changes to any interface value require synchronized review of [metadata](../action.yml), [orchestration](../entrypoint.sh), [workflow examples](./api-usage-examples.md), and [contracts](./invariants.md).

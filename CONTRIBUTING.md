@@ -37,7 +37,9 @@ This document covers the guidelines and processes for contributing to this proje
 
 #### Prerequisites
 
-- Docker
+- Bash and the standard GNU utilities
+- A Linux environment for end-to-end runs
+- Docker only for the optional local test image
 
 #### Development Setup
 
@@ -46,8 +48,8 @@ This document covers the guidelines and processes for contributing to this proje
 git clone https://github.com/hmlendea/steam-workshop-update.git
 cd steam-workshop-update
 
-# Install dependencies
-docker build -t steam-workshop-update .
+# Install SteamCMD and the TOTP helper natively
+bash scripts/install-steamcmd.sh
 ```
 
 #### Making Changes
@@ -74,9 +76,16 @@ Follow the project's coding standards:
 
 ### Testing
 
-No automated tests exist. Validate changes by running the Docker image locally:
+Validate changes with the unit suite before committing:
 
 ```bash
+bash tests/test_entrypoint.sh
+```
+
+A local test image is also available for manual runs:
+
+```bash
+docker build -t steam-workshop-update .
 docker run --rm steam-workshop-update
 ```
 

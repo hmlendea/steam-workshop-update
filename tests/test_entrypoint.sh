@@ -4,6 +4,11 @@
 
 set -uo pipefail
 
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+REPO_ROOT=$(cd "${SCRIPT_DIR}/.." && pwd)
+ENTRYPOINT="${REPO_ROOT}/entrypoint.sh"
+INSTALL_SCRIPT="${REPO_ROOT}/scripts/install-steamcmd.sh"
+
 # --- Test framework ---
 
 TESTS_RUN=0
@@ -90,16 +95,13 @@ assert_exit_code() {
 # Source the entrypoint functions without executing the main body.
 # We do this by extracting functions and sourcing them in a controlled way.
 load_entrypoint_functions() {
-    local entrypoint="/home/horatiu/Proiecte/github-actions/steam-workshop-update/entrypoint.sh"
     # Extract function definitions only (lines from function name to closing brace)
-    # We use a subshell-safe approach: source with a guard
     local tmpfile
     tmpfile=$(mktemp)
-    # Extract just the function definitions
-    sed -n '/^sanitize_output()/,/^}/p' "$entrypoint" > "$tmpfile"
-    sed -n '/^log_sanitized_cmd()/,/^}/p' "$entrypoint" >> "$tmpfile"
-    sed -n '/^validate_input()/,/^}/p' "$entrypoint" >> "$tmpfile"
-    sed -n '/^run_steamcmd()/,/^}/p' "$entrypoint" >> "$tmpfile"
+    sed -n '/^sanitize_output()/,/^}/p' "$ENTRYPOINT" > "$tmpfile"
+    sed -n '/^log_sanitized_cmd()/,/^}/p' "$ENTRYPOINT" >> "$tmpfile"
+    sed -n '/^validate_input()/,/^}/p' "$ENTRYPOINT" >> "$tmpfile"
+    sed -n '/^run_steamcmd()/,/^}/p' "$ENTRYPOINT" >> "$tmpfile"
     source "$tmpfile"
     rm -f "$tmpfile"
 }
@@ -184,52 +186,41 @@ test_validate_input_changenote() {
 test_retry_counter() {
     echo -e "\n${YELLOW}=== Test Suite: Retry Counter ===${NC}"
 
-    # Simulate the retry loop logic from entrypoint.sh
-    local ATTEMPTS_CURRENT=0
-    local ATTEMPTS_MAX=3
-    local IS_SUCCESSFUL=0
-    local attempts_made=0
+    local loop_source
+    loop_source=$(sed -n '/^# Attempt loop/,/^done$/p' "$ENTRYPOINT")
 
-    # Simulate 3 failures then check loop terminates
-    while [[ $ATTEMPTS_CURRENT -lt $ATTEMPTS_MAX ]]; do
-        attempts_made=$((attempts_made + 1))
-        ATTEMPTS_CURRENT=$((ATTEMPTS_CURRENT + 1))
-        # Simulate failure (no break)
-    done
+    if [[ -z "$loop_source" ]]; then
+        assert_eq "Retry loop found in entrypoint.sh" "present" "missing"
+        return
+    fi
 
-    assert_eq "Loop runs exactly 3 times on all failures" "3" "$attempts_made"
-    assert_eq "ATTEMPTS_CURRENT reaches 3" "3" "$ATTEMPTS_CURRENT"
-    assert_eq "IS_SUCCESSFUL remains 0 on all failures" "0" "$IS_SUCCESSFUL"
+    # Persistent failure must stop after ATTEMPTS_MAX invocations, even under
+    # errexit, which is exactly what the old implementation failed to do.
+    local failures_output attempts
+    failures_output=$(
+        set -e
+        ATTEMPTS_MAX=3
+        run_steamcmd() { return 1; }
+        sleep() { :; }
+        eval "$loop_source"
+    ) 2>/dev/null
 
-    # Simulate success on first attempt
-    ATTEMPTS_CURRENT=0
-    IS_SUCCESSFUL=0
-    attempts_made=0
-    while [[ $ATTEMPTS_CURRENT -lt $ATTEMPTS_MAX ]]; do
-        attempts_made=$((attempts_made + 1))
-        IS_SUCCESSFUL=1
-        break
-        ATTEMPTS_CURRENT=$((ATTEMPTS_CURRENT + 1))
-    done
+    run_steamcmd() { return 1; }
+    attempts=$(printf '%s\n' "$failures_output" | grep -c '^Attempt [0-9]* of 3\.\.\.$')
 
-    assert_eq "Loop breaks on first success" "1" "$attempts_made"
-    assert_eq "IS_SUCCESSFUL set to 1 on success" "1" "$IS_SUCCESSFUL"
+    assert_eq "Persistent failure runs exactly 3 attempts" "3" "$attempts"
 
-    # Simulate success on second attempt
-    ATTEMPTS_CURRENT=0
-    IS_SUCCESSFUL=0
-    attempts_made=0
-    while [[ $ATTEMPTS_CURRENT -lt $ATTEMPTS_MAX ]]; do
-        attempts_made=$((attempts_made + 1))
-        ATTEMPTS_CURRENT=$((ATTEMPTS_CURRENT + 1))
-        if [[ $attempts_made -eq 2 ]]; then
-            IS_SUCCESSFUL=1
-            break
-        fi
-    done
+    local success_output
+    success_output=$(
+        set -e
+        ATTEMPTS_MAX=3
+        run_steamcmd() { return 0; }
+        sleep() { :; }
+        eval "$loop_source"
+    )
 
-    assert_eq "Loop breaks on second attempt success" "2" "$attempts_made"
-    assert_eq "IS_SUCCESSFUL set to 1 on second attempt" "1" "$IS_SUCCESSFUL"
+    attempts=$(printf '%s\n' "$success_output" | grep -c '^Attempt [0-9]* of 3\.\.\.$')
+    assert_eq "Success stops after one attempt" "1" "$attempts"
 }
 
 test_totp_validation() {
@@ -270,9 +261,8 @@ test_run_steamcmd_argument_array() {
     echo -e "\n${YELLOW}=== Test Suite: run_steamcmd Argument Array ===${NC}"
 
     # Verify that run_steamcmd uses argument arrays (no eval)
-    local entrypoint="/home/horatiu/Proiecte/github-actions/steam-workshop-update/entrypoint.sh"
     local content
-    content=$(cat "$entrypoint")
+    content=$(cat "$ENTRYPOINT")
 
     assert_not_contains "No eval in entrypoint" "$content" "eval "
     assert_contains "Uses local -a for argument array" "$content" "local -a steamcmd_args"
@@ -282,19 +272,37 @@ test_run_steamcmd_argument_array() {
 test_strict_mode() {
     echo -e "\n${YELLOW}=== Test Suite: Strict Mode ===${NC}"
 
-    local entrypoint="/home/horatiu/Proiecte/github-actions/steam-workshop-update/entrypoint.sh"
     local content
-    content=$(cat "$entrypoint")
+    content=$(cat "$ENTRYPOINT")
 
-    assert_contains "set -euo pipefail present" "$content" "set -euo pipefail"
+    assert_contains "set -euo pipefail present in entrypoint" "$content" "set -euo pipefail"
+
+    content=$(cat "$INSTALL_SCRIPT")
+    assert_contains "set -euo pipefail present in installer" "$content" "set -euo pipefail"
+}
+
+test_no_container_execution() {
+    echo -e "\n${YELLOW}=== Test Suite: Native Execution ===${NC}"
+
+    # The action must not run SteamCMD through Docker, whose default seccomp
+    # profile breaks the 32-bit client on Docker 29.4.2.
+    local action_content
+    action_content=$(cat "${REPO_ROOT}/action.yml")
+
+    assert_contains "Action uses composite execution" "$action_content" "using: 'composite'"
+    assert_not_contains "Action does not build a Docker image" "$action_content" "image: 'Dockerfile'"
+    assert_contains "Inputs are mapped to INPUT_ environment variables" "$action_content" "INPUT_APPID: \${{ inputs.appid }}"
+
+    local content
+    content=$(cat "$ENTRYPOINT")
+    assert_not_contains "Entrypoint does not rely on the container Steam home" "$content" "/home/steam"
 }
 
 test_exit_codes() {
     echo -e "\n${YELLOW}=== Test Suite: Exit Codes ===${NC}"
 
-    local entrypoint="/home/horatiu/Proiecte/github-actions/steam-workshop-update/entrypoint.sh"
     local content
-    content=$(cat "$entrypoint")
+    content=$(cat "$ENTRYPOINT")
 
     assert_contains "Exit 0 on success" "$content" "exit 0"
     assert_contains "Exit 2 on failure" "$content" "exit 2"
@@ -304,14 +312,13 @@ test_exit_codes() {
 test_log_sanitization() {
     echo -e "\n${YELLOW}=== Test Suite: Log Sanitization ===${NC}"
 
-    local entrypoint="/home/horatiu/Proiecte/github-actions/steam-workshop-update/entrypoint.sh"
     local content
-    content=$(cat "$entrypoint")
+    content=$(cat "$ENTRYPOINT")
 
     assert_contains "sanitize_output function defined" "$content" "sanitize_output()"
     assert_contains "log_sanitized_cmd function defined" "$content" "log_sanitized_cmd()"
-    assert_contains "stderr.txt sanitized on failure" "$content" "sanitize_output \"\$(cat /home/steam/Steam/logs/stderr.txt)\""
-    assert_contains "workshop_log.txt sanitized on failure" "$content" "sanitize_output \"\$(cat /home/steam/Steam/logs/workshop_log.txt)\""
+    assert_contains "Steam logs are read from the Steam home" "$content" 'LOG_DIR="${STEAMCMD_HOME}/Steam/logs"'
+    assert_contains "Failure paths print both Steam logs" "$content" "for log_name in stderr.txt workshop_log.txt; do"
 }
 
 # --- Main ---
@@ -331,6 +338,7 @@ main() {
     test_totp_validation
     test_run_steamcmd_argument_array
     test_strict_mode
+    test_no_container_execution
     test_exit_codes
     test_log_sanitization
 

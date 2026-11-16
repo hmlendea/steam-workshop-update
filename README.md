@@ -51,9 +51,16 @@ Add the following step to your GitHub Actions workflow:
 
 ### Requirements
 
-- [Docker](https://docs.docker.com/get-docker/)
+- Bash and `bash -n` for syntax checks
+- A Linux environment for native execution; Docker only if you want the local test image
 
-### Docker
+### Tests
+
+```bash
+bash tests/test_entrypoint.sh
+```
+
+### Local Test Image
 
 ```bash
 docker build -t steam-workshop-update .
@@ -101,9 +108,10 @@ For details on how this GitHub Action handles personal data, see the [Privacy Po
 
 For details on how to report security vulnerabilities, see the [Security Policy](./SECURITY.md).
 
-# Architecture
+## 🏗️ Architecture
 
-For details on the architecture of this GitHub Action, see the [Architecture Documentation](./ARCHITECTURE.md).
+Steam Workshop Update is a composite GitHub Action that installs Valve's SteamCMD client natively on the runner and drives it from a Bash entrypoint to update an existing Workshop item.
 
+See the [Architecture Documentation](./ARCHITECTURE.md) for the system context, principal components, runtime flows, ownership boundaries, dependencies, constraints, and extension points.
 ## 📜 Code of Conduct
 See the [Code of Conduct](./CODE_OF_CONDUCT.md) for the standards of conduct expected in all project spaces.

@@ -4,11 +4,11 @@
 
 | Intended Change | Owning Sources | Required Contract Review | Focused Validation |
 |---|---|---|---|
-| Add/rename input | [Metadata](../action.yml), [script](../entrypoint.sh) | `INPUT_*` consumption, defaults, direct Docker callers | Metadata-to-environment mapping and exact VDF output |
+| Add/rename input | [Metadata](../action.yml), [script](../entrypoint.sh) | `INPUT_*` consumption, defaults, direct script callers | Metadata-to-environment mapping and exact VDF output |
 | Change descriptor | [Script](../entrypoint.sh) | Quoting, path containment, client parser, printed data | Normal/hostile strings, write failure, stale-file handling |
-| Fix retries | [Script](../entrypoint.sh) | Total attempts versus retries, terminal diagnostics, ambient environment | Exact counts for all-fail/eventual-success/helper-fail; bounded harness |
-| Change authentication | [Script](../entrypoint.sh), [image](../Dockerfile) | Seed format, code capture, argument boundaries, inherited secrets | Mock both branches and helper failures before live login |
-| Upgrade dependencies | [Image](../Dockerfile) | Architecture, libraries, fixed paths, provenance, effective user | Build plus focused mocked and authorized integration checks |
+| Fix retries | [Script](../entrypoint.sh) | Total attempts versus retries, terminal diagnostics | Exact counts for all-fail/eventual-success/helper-fail via [tests/test_entrypoint.sh](../tests/test_entrypoint.sh) |
+| Change authentication | [Script](../entrypoint.sh) | Seed format, code capture, argument boundaries, inherited secrets | Mock both branches and helper failures before live login |
+| Upgrade dependencies | [Installer](../scripts/install-steamcmd.sh) | Architecture, 32-bit runtime, download sources, provenance | Installer run plus focused mocked and authorized integration checks |
 | Add outputs | [Metadata](../action.yml), [script](../entrypoint.sh) | Output schema and source of truth for remote publication | Consumer compatibility; no invented publication confirmation |
 | Change logs | [Script](../entrypoint.sh) | Data disclosure, diagnostic reachability, volume, exit status | Missing/sensitive logs and failure-path checks |
 

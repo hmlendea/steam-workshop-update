@@ -15,7 +15,7 @@ The workflow must prepare the complete directory before calling the action. Stea
 - Missing credentials: fatal message naming the missing variable; status one.
 - Upload path: printed descriptor, attempt messages, and inherited external-tool output.
 - Client status zero: step succeeds; no verification query follows.
-- Repeated failures: normally repeated attempts until success or external cancellation because of the [counter defect](../flows/retries-and-exit-status.md).
+- Repeated failures: up to three attempts, then log dumping and status two.
 - Terminal failure, when reached: client log dumping and status two.
 
 There is no dry-run option, content diff, rollback, scheduled trigger, cancellation handler, or item-level concurrency guard. Re-running a step can publish again; this is not an idempotency guarantee. See [examples](../api-usage-examples.md), [troubleshooting](../troubleshooting.md), and the full [execution flow](../flows/workshop-update.md).
