@@ -8,7 +8,8 @@
 4. It expands four input strings and the workspace prefix into `${STEAMCMD_ROOT}/workshop.vdf`, then prints that file.
 5. `run_steamcmd` chooses [password-only or seeded authentication](./authentication.md).
 6. SteamCMD receives login, `workshop_build_item`, and quit commands in one invocation. The client reads the descriptor and content, interacts with Steam, and returns a status.
-7. Status zero sets the local success flag, breaks the loop, and exits zero. The runner observes process success; the action publishes no output value.
+7. Status zero sets the local success flag and breaks the loop.
+8. After a successful upload the script waits a fixed 30-second cooldown, then exits zero. The runner observes process success; the action publishes no output value.
 
 ```mermaid
 sequenceDiagram
