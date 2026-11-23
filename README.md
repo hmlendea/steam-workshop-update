@@ -1,5 +1,6 @@
 [![Donate](https://img.shields.io/badge/-%E2%99%A5%20Donate-%23ff69b4)](https://hmlendea.go.ro/funding)
 [![Latest Release](https://img.shields.io/github/v/release/hmlendea/steam-workshop-update)](https://github.com/hmlendea/steam-workshop-update/releases/latest)
+[![Build Status](https://github.com/hmlendea/steam-workshop-update/actions/workflows/release-latest-tag.yml/badge.svg)](https://github.com/hmlendea/steam-workshop-update/actions/workflows/release-latest-tag.yml)
 [![License](https://img.shields.io/github/license/hmlendea/steam-workshop-update)](https://github.com/hmlendea/steam-workshop-update/blob/master/LICENSE)
 
 # Steam Workshop Update
@@ -26,6 +27,7 @@ A composite GitHub Action that installs Valve's SteamCMD client natively on the 
   - [Test](#test)
   - [Docker](#docker)
   - [Dependencies](#dependencies)
+- [GitHub Actions](#-github-actions)
 - [Project Structure](#-project-structure)
   - [Directories](#directories)
 - [Architecture](#-architecture)
@@ -183,6 +185,12 @@ A run without credentials exits with status `1`, which validates only the early 
 | 32-bit C runtime | Distribution package | Runtime | Runs the i386 SteamCMD client. |
 | `curl` or `wget`, `tar` | Runner image | Build and runtime | Downloads and extracts the client and helper. |
 
+## ⚙️ GitHub Actions
+
+| Workflow | Purpose | What it does |
+|----------|---------|--------------|
+| [ release-latest-tag.yml ](https://github.com/hmlendea/steam-workshop-update/blob/master/.github/workflows/release-latest-tag.yml) | Release ref maintenance | Force-moves the `latest` tag onto the tag of each published release, so that consumers who reference `@latest` follow the newest release |
+
 ## 🗂️ Project Structure
 
 The repository contains the action metadata, the SteamCMD installer, the entrypoint, the local test image, the test suite, policies, and supporting documentation.
@@ -191,7 +199,7 @@ The repository contains the action metadata, the SteamCMD installer, the entrypo
 
 | Directory | Purpose |
 |-----------|---------|
-| `.github/` | Repository hosting metadata and the funding configuration. |
+| `.github/` | Repository hosting metadata, the funding configuration, and the GitHub Actions workflows. |
 | `docs/` | Detailed architecture, behaviour, configuration, security, and testing documentation. |
 | `scripts/` | SteamCMD and helper installation performed by the first action step. |
 | `tests/` | Unit and integration test scripts for the entrypoint and installer. |

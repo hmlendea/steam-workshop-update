@@ -11,6 +11,7 @@
 | [tests/test_entrypoint.sh](../tests/test_entrypoint.sh) | Unit suite over extracted functions and the real retry loop | Retry, validation, redaction, and layout regressions |
 | [tests/integration/](../tests/integration/) | Optional live-credential integration harness | Manual end-to-end verification |
 | [.github/FUNDING.yml](../.github/FUNDING.yml) | Funding metadata | Not loaded by the action; no upload effect |
+| [.github/workflows/release-latest-tag.yml](../.github/workflows/release-latest-tag.yml) | Force-moves the `latest` tag onto each published release | No effect on the action runtime; controls the mutable `@latest` reference |
 | [README.md](../README.md) | Existing user introduction and workflow example | Documents intended retry and runner behaviour |
 | [ARCHITECTURE.md](../ARCHITECTURE.md) | Existing architectural overview | Contains claims that require qualification; see [open questions](./ambiguities-and-open-questions.md) |
 | [CONTRIBUTING.md](../CONTRIBUTING.md) | Contribution process and suggested checks | Production scripts enable `set -euo pipefail` |
@@ -31,7 +32,7 @@ There is one function relevant to upload in the [entrypoint](../entrypoint.sh), 
 6. Counter initialisation and upload loop.
 7. Success exit or terminal diagnostics and failure exit.
 
-[scripts/install-steamcmd.sh](../scripts/install-steamcmd.sh) owns client acquisition and exposes a `main` guard so its functions can be sourced. There are no namespaces, application packages, controllers, migrations, dependency lockfiles, or repository-owned CI workflow files in the reviewed tracked tree.
+[scripts/install-steamcmd.sh](../scripts/install-steamcmd.sh) owns client acquisition and exposes a `main` guard so its functions can be sourced. There are no namespaces, application packages, controllers, migrations, dependency lockfiles, or test-enforcing CI workflow files in the reviewed tracked tree.
 
 ## Documentation Layout
 

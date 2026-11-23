@@ -1,0 +1,27 @@
+name: Latest Tag
+
+on:
+  release:
+    types:
+      - published
+
+permissions:
+  contents: write
+
+jobs:
+  latest-tag:
+    name: Update the latest tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Point latest at the release tag
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          git push --force origin "refs/tags/${RELEASE_TAG}:refs/tags/latest"
+
+          echo "latest now points at ${RELEASE_TAG}."
