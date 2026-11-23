@@ -14,7 +14,7 @@ The workflow must prepare the complete directory before calling the action. Stea
 
 - Missing credentials: fatal message naming the missing variable; status one.
 - Upload path: printed descriptor, attempt messages, and inherited external-tool output.
-- Client status zero: step succeeds; no verification query follows.
+- Client status zero: step waits a 30-second post-upload cooldown, then succeeds; no verification query follows.
 - Repeated failures: up to three attempts, then log dumping and status two.
 - Terminal failure, when reached: client log dumping and status two.
 

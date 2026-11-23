@@ -16,6 +16,7 @@ LOG_DIR="${STEAMCMD_HOME}/Steam/logs"
 WORKSHOP_VDF="${STEAMCMD_ROOT}/workshop.vdf"
 
 ATTEMPTS_MAX=3
+POST_UPLOAD_COOLDOWN_SECONDS=30
 
 # Sanitize sensitive values from output
 sanitize_output() {
@@ -190,6 +191,8 @@ while [[ ${ATTEMPTS_CURRENT} -lt ${ATTEMPTS_MAX} ]]; do
 done
 
 if [[ ${IS_SUCCESSFUL} -eq 1 ]]; then
+    echo "Upload successful. Waiting ${POST_UPLOAD_COOLDOWN_SECONDS} seconds before continuing..."
+    sleep "${POST_UPLOAD_COOLDOWN_SECONDS}"
     exit 0
 fi
 

@@ -4,7 +4,7 @@
 
 The [entrypoint](../entrypoint.sh) runs one synchronous Bash control flow. Helper execution completes before SteamCMD starts; SteamCMD completes before status inspection and any retry delay. There are no background jobs, async tasks, queues, threads, or internal schedulers implemented here. External tools may have their own concurrency, which was not inspected.
 
-Descriptor generation occurs once before the loop. Each failed attempt except the last incurs `sleep 2`, so a persistent failure now completes in bounded time ([retry policy](./flows/retries-and-exit-status.md)); a hanging client can still prevent progress independently.
+Descriptor generation occurs once before the loop. Each failed attempt except the last incurs `sleep 2`, so a persistent failure now completes in bounded time ([retry policy](./flows/retries-and-exit-status.md)); a hanging client can still prevent progress independently. A successful upload incurs a fixed 30-second cooldown before the script exits, lengthening the step but not changing its concurrency properties.
 
 ## Cross-Invocation Hazards
 

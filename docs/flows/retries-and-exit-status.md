@@ -17,9 +17,9 @@ Observed behaviour:
 1. The first iteration prints `Attempt 1 of 3...`.
 2. A failure prints `Attempt 1 failed.` followed by `Retrying...` and a two-second delay.
 3. At most three invocations occur; the delay is skipped after the final attempt.
-4. Success at any iteration breaks the loop and exits zero.
+4. Success at any iteration breaks the loop, then the script waits a fixed `POST_UPLOAD_COOLDOWN_SECONDS` (30) delay before exiting zero, allowing the remote item to settle.
 
-There is no local deadline and no exponential backoff.
+There is no local deadline and no exponential backoff beyond the fixed two-second retry delay and the fixed post-upload cooldown.
 
 ## Exit Contract
 
@@ -28,7 +28,7 @@ There is no local deadline and no exponential backoff.
 | Missing username/password | `1` | Before descriptor generation |
 | Missing SteamCMD installation | `1` | Before descriptor generation |
 | Invalid `appid`, `itemid`, `path`, or `changenote` | `1` | Before descriptor generation |
-| Helper/client returns zero as appropriate | `0` | No independent remote publication check |
+| Helper/client returns zero as appropriate | `0` | Waits a 30-second post-upload cooldown; no independent remote publication check |
 | All three attempts fail | `2` | Prints both Steam log files first |
 | Cancellation, signal termination, arithmetic failure | Environment-dependent | Not normalized to the explicit application statuses |
 
