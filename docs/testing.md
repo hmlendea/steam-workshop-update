@@ -2,7 +2,7 @@
 
 ## Repository Baseline
 
-The repository ships one automated suite, [tests/test_entrypoint.sh](../tests/test_entrypoint.sh), plus an optional integration harness under `tests/integration/` that requires real Steam credentials and an authorized Workshop item. There is no repository-owned CI workflow, so the suite is not enforced automatically.
+The repository ships one automated suite, [tests/test_entrypoint.sh](../tests/test_entrypoint.sh), plus an optional integration harness under `tests/integration/` that requires real Steam credentials and an authorized Workshop item. There is no test-enforcing CI workflow, so the suite is not enforced automatically; the only repository-owned workflow maintains the `latest` tag.
 
 The unit suite sources the entrypoint's functions, extracts the real retry loop, and asserts validation, redaction, TOTP shape, strict-mode, exit-status, arg-array, and native-execution properties. Running it requires Bash only: no network, SteamCMD, or credentials.
 

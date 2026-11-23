@@ -30,7 +30,7 @@ The script has no cleanup routine. `sanitize_output` redacts known credential va
 
 ## Where Are The Tests And Roadmap?
 
-[tests/test_entrypoint.sh](../tests/test_entrypoint.sh) is the committed unit suite; it runs with Bash only. No CI workflow or root roadmap exists, so the suite is not enforced automatically. See [testing](./testing.md).
+[tests/test_entrypoint.sh](../tests/test_entrypoint.sh) is the committed unit suite; it runs with Bash only. No test-enforcing CI workflow or root roadmap exists, so the suite is not enforced automatically. See [testing](./testing.md).
 
 ## Why Is There No Second Architecture Overview?
 

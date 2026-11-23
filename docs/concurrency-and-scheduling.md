@@ -10,7 +10,7 @@ Descriptor generation occurs once before the loop. Each failed attempt except th
 
 Separate workflow runs can update the same Workshop item concurrently. There is no distributed lock, lease, item-version check, or conflict handling. On a persistent self-hosted runner, sharing `${STEAMCMD_ROOT}` across concurrent jobs can also make multiple processes overwrite the same descriptor and client state.
 
-The repository defines no workflow triggers or scheduling policy. The calling workflow owns cron/manual/push triggers, `timeout-minutes`, job ordering, and GitHub Actions `concurrency` groups. Prefer serialization by target item and explicit job timeouts; cancellation can interrupt an upload and does not undo remote effects.
+The repository commits one workflow, [release-latest-tag.yml](../.github/workflows/release-latest-tag.yml), which only force-moves the `latest` tag on a published release. It defines no upload triggers or scheduling policy; the calling workflow owns cron/manual/push triggers, `timeout-minutes`, job ordering, and GitHub Actions `concurrency` groups. Prefer serialization by target item and explicit job timeouts; cancellation can interrupt an upload and does not undo remote effects.
 
 ## Time Dependencies
 
