@@ -52,6 +52,7 @@ A composite GitHub Action that installs Valve's SteamCMD client natively on the 
 - Redacts passwords, seeds, and generated codes from command output
 - Accepts an optional changenote for each update
 - Accepts an optional preview image, or detects one in the content directory
+- Downscales the preview image to a maximum of 512 pixels per dimension
 
 ## 🚀 Usage
 
@@ -104,7 +105,7 @@ The action receives five workflow inputs and three environment variables. Use pr
 | Workflow input | `itemid` | `String` | None | Yes | Existing Workshop item identifier. |
 | Workflow input | `path` | `String` | None | Yes | Content directory relative to the workspace root. |
 | Workflow input | `changenote` | `String` | Attribution message | No | Workshop update description. |
-| Workflow input | `icon` | `String` | Detected automatically | No | Preview image, relative to the workspace root; when omitted, a recognised filename in the content directory is used if present. |
+| Workflow input | `icon` | `String` | Detected automatically | No | Preview image, relative to the workspace root; when omitted, a recognised filename in the content directory is used if present. Images larger than 512 pixels in either dimension are downscaled automatically. |
 
 ### Secret Management
 
@@ -185,6 +186,7 @@ A run without credentials exits with status `1`, which validates only the early 
 |---------|---------|-------|---------|
 | SteamCMD | Steam CDN archive | Runtime | Authenticates with Steam and uploads Workshop content. |
 | `steam-totp` | 1.0.1 | Optional | Generates a Steam two-factor authentication code. |
+| ImageMagick | Distribution package | Runtime | Reads and downscales the preview image to the 512-pixel limit. |
 | 32-bit C runtime | Distribution package | Runtime | Runs the i386 SteamCMD client. |
 | `curl` or `wget`, `tar` | Runner image | Build and runtime | Downloads and extracts the client and helper. |
 

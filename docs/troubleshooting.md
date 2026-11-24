@@ -10,6 +10,8 @@
 | Helper failure before any login | Seed branch returns one on helper nonzero or malformed code | Verify installed helper compatibility and redacted stderr |
 | Login fails despite helper zero | Account/challenge/time conditions external | Check clock and authorized helper/account setup; never share seed/code |
 | Invalid descriptor/client parse error | Unescaped quotes/newlines in changenote | Review sanitized generated VDF against [schema](./data-model.md) |
+| `FATAL: ImageMagick is required` | Preview image resolved but neither `magick` nor `convert`/`identify` is installed | Install ImageMagick on self-hosted runners, or remove the preview image |
+| `FATAL: Unable to read the dimensions` | The resolved preview file is not a decodable image | Verify the preview file opens as an image, or remove it |
 | `FATAL: Input path ...` | Content path missing or outside the workspace | Confirm the workspace checkout and relative directory |
 | Upload permission failure | App/item/account assumptions delegated to Steam | Verify target ownership and authorization outside action |
 | Install fails fetching client/helper | Install-time network or provenance dependency | Inspect the download URL, CDN access, and GitHub Releases access |

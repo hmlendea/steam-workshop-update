@@ -8,7 +8,7 @@ FROM ubuntu:24.04
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates curl tar lib32gcc-s1 && \
+    apt-get install -y --no-install-recommends ca-certificates curl tar lib32gcc-s1 imagemagick && \
     rm -rf /var/lib/apt/lists/*
 
 ENV STEAMCMD_ROOT=/opt/steamcmd

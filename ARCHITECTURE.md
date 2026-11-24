@@ -47,7 +47,7 @@ The action previously ran inside a Docker container. GitHub's Ubuntu 26.04 runne
 
 1. **Installation**: The runner executes `scripts/install-steamcmd.sh`, which ensures a 32-bit runtime, downloads Valve's SteamCMD archive, bootstraps the client, and downloads the `steam-totp` helper into `${STEAMCMD_ROOT}` (default `${RUNNER_TEMP}/steamcmd`).
 2. **Validation**: The entrypoint script validates required environment variables (`STEAM_USERNAME`, `STEAM_PASSWORD`), requires an executable client, validates the inputs, and validates the content path and an explicitly requested preview image.
-3. **Configuration**: A `workshop.vdf` file is generated with the provided inputs (`appid`, `itemid`, `path`, `changenote`, `icon`), including a `previewfile` field when a preview image applies.
+3. **Configuration**: A `workshop.vdf` file is generated with the provided inputs (`appid`, `itemid`, `path`, `changenote`, `icon`), including a `previewfile` field when a preview image applies. A preview larger than 512 pixels in either dimension is first downscaled into a copy under `${STEAMCMD_ROOT}`.
 4. **Authentication**: The script authenticates with Steam using `steamcmd`, optionally generating a 2FA code from the provided seed.
 5. **Upload**: The action retries the workshop upload up to three times on failure.
 6. **Completion**: On success, the action exits with status `0`. On failure, it prints the client logs and exits with status `2`.

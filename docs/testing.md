@@ -12,7 +12,7 @@ A local container run without credentials tests only early validation, not authe
 
 On 2026-11-16:
 - `bash -n entrypoint.sh` and `bash -n scripts/install-steamcmd.sh` passed syntax validation.
-- `bash tests/test_entrypoint.sh` passed all 52 assertions, including the extracted retry loop producing exactly three attempts on persistent failure and one on immediate success, plus the preview-image resolver and explicit-icon validation.
+- `bash tests/test_entrypoint.sh` passed all 64 assertions, including the extracted retry loop producing exactly three attempts on persistent failure and one on immediate success, plus the preview-image resolver, explicit-icon validation, and the downscaling suites.
 
 The suite covers local control flow only; it does not observe real client statuses, VDF contents on disk, executable availability, or remote effects.
 
@@ -25,6 +25,7 @@ No Docker build, real helper execution, Steam authentication, or upload was atte
 | Credentials | Each missing, both missing, valid | Ordered message/status; no descriptor/client effect when invalid |
 | Descriptor | Normal values, empty input, spaces, quotes/newlines, missing workspace | Exact fields; explicit policy for invalid VDF and unsafe paths |
 | Preview image | Explicit icon, detected filename, none present, missing file, directory, path outside workspace | Precedence, detection order, descriptor field presence, containment |
+| Preview sizing | Oversized landscape, square, and portrait; within-limit; exact-limit; unreadable file; absent ImageMagick | Bounding box, aspect ratio, no enlargement, dedicated copy under `${STEAMCMD_ROOT}`, fatal exit on unreadable input |
 | File failures | Unwritable target, missing content, old descriptor | Intended stop/continue behaviour; no accidental stale upload |
 | Authentication | No seed, valid helper result, helper nonzero, empty helper output | Argument boundaries, client gating, status propagation |
 | Retries | All fail, first succeeds, later succeeds | Exact call count, finite budget, delay policy, no extra publication after success |

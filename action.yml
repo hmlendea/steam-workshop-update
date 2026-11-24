@@ -20,7 +20,7 @@ inputs:
     required: false
     default: 'Uploaded using the [url=https://github.com/hmlendea/steam-workshop-update]hmlendea/steam-workshop-update[/url] GitHub Actions workflow.'
   icon:
-    description: 'Preview image for the Workshop item, relative to the repository root. When omitted, thumbnail.png, thumbnail.jpg, icon.png, icon.jpg, thumb.png, or thumb.jpg in the content directory is used if present.'
+    description: 'Preview image for the Workshop item, relative to the repository root. When omitted, the content directory is searched for a recognised filename. Images larger than 512 pixels in either dimension are downscaled automatically.'
     required: false
 
 runs:

@@ -23,11 +23,11 @@
 
 ## Source Anchors
 
-There is one function relevant to upload in the [entrypoint](../entrypoint.sh), `run_steamcmd`, alongside helpers `sanitize_output`, `log_sanitized_cmd`, `validate_input`, and `resolve_preview_file`. The remainder executes at script top level, in this order:
+There is one function relevant to upload in the [entrypoint](../entrypoint.sh), `run_steamcmd`, alongside helpers `sanitize_output`, `log_sanitized_cmd`, `validate_input`, `resolve_preview_file`, `resolve_image_tooling`, and `downscale_preview_file`. The remainder executes at script top level, in this order:
 1. Path and layout resolution.
 2. Username, password, and client-availability checks.
 3. Input validation, explicit icon validation, and content-path containment.
-4. Preview-image resolution.
+4. Preview-image resolution and optional downscaling.
 5. VDF generation and printing.
 6. Function definitions.
 7. Counter initialisation and upload loop.

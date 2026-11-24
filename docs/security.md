@@ -10,6 +10,7 @@ For support and vulnerability reporting, use the [root security policy](../SECUR
 | Environment to subprocess | Password/seed/code supplied as command arguments; environment inherited | Privileged host/process inspection can expose them |
 | Inputs to VDF | Direct heredoc interpolation, followed by full printing | Quotes/newlines can alter VDF; sensitive changenotes/paths become logs |
 | Workspace to client | Literal workspace/path concatenation, validated for existence and containment, including an explicit preview image | Content is not snapshotted; VDF strings are not escaped |
+| Preview image to ImageMagick | A workspace-controlled file is decoded by a distribution-provided tool | Image parsing occurs on caller-supplied input; the downscaled copy is written under `${STEAMCMD_ROOT}` |
 | Install to external artifacts | Unpinned client archive; versioned helper without integrity check | Supply-chain trust and reproducibility gaps |
 | Client to retained logs | Inherited output plus terminal log dump | No wrapper-level redaction or sensitivity classifier |
 | Concurrent callers to Workshop | Repeated publication without lock | Race/duplicate-update risk and no rollback |

@@ -9,6 +9,7 @@
 | 32-bit glibc runtime | Present on GitHub-hosted runners; added as `lib32gcc-s1`/`glibc.i686` when missing | The SteamCMD client is i386; without it the client cannot start |
 | SteamCMD client | `steamcmd_linux.tar.gz` from the Steam CDN, unpinned | Downloaded and bootstrapped at install time |
 | `steam-totp` | GitHub release `v1.0.1`, asset `steam-totp_1.0.1_linux-x64` | Downloaded at install time, executed only with seed |
+| ImageMagick | Present on GitHub-hosted runners; added as `imagemagick`/`ImageMagick` when missing | Reads and downscales the preview image to the 512-pixel limit; without it a resolved preview aborts the run |
 | Bash and basic utilities | Runner image | Conditions, arithmetic, heredoc, `cat`, `tar`, `sleep`; absent tools break orchestration |
 | Steam services | External Valve infrastructure | Authentication and Workshop publication; no local substitute in production |
 
@@ -20,6 +21,6 @@ The client's exact revision, transitive libraries, and the helper's runtime requ
 
 ## Upgrade Checklist
 
-Review runner operating-system compatibility, 32-bit library availability, helper architecture, authentication argument shape, client status semantics, and security provenance. A successful install does not test login or upload. Start with [mocked orchestration scenarios](./testing.md), then use a controlled integration target if authorized.
+Review runner operating-system compatibility, 32-bit library availability, helper architecture, ImageMagick availability and version, authentication argument shape, client status semantics, and security provenance. A successful install does not test login or upload. Start with [mocked orchestration scenarios](./testing.md), then use a controlled integration target if authorized.
 
 See [build details](./build-and-deployment.md) and [external integration boundaries](./integrations.md).

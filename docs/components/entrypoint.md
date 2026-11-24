@@ -13,11 +13,12 @@
 3. Check `STEAM_PASSWORD` the same way, then require an executable client.
 4. Validate `appid` and `itemid` as numeric, the workspace-relative content path for existence and containment, and `changenote` for printable characters and length. Validate an explicitly supplied `icon` as an existing file inside the workspace.
 5. Resolve the preview image, preferring the explicit `icon` and otherwise probing the content directory for a recognised filename.
-6. Overwrite `${STEAMCMD_ROOT}/workshop.vdf` from the input variables and workspace path, adding `previewfile` only when a preview image resolves, then print it.
-7. Initialise loop state and invoke `run_steamcmd` inside an `if` condition.
-8. On status zero, set `IS_SUCCESSFUL=1`, break, and exit zero.
-9. On failure, increment the counter, print a retry message, and delay two seconds unless the budget is exhausted.
-10. If the loop terminates without success, print two client log files and exit two.
+6. Downscale a resolved preview image to fit within 512 pixels per dimension, writing a copy under `${STEAMCMD_ROOT}` when required.
+7. Overwrite `${STEAMCMD_ROOT}/workshop.vdf` from the input variables and workspace path, adding `previewfile` only when a preview image resolves, then print it.
+8. Initialise loop state and invoke `run_steamcmd` inside an `if` condition.
+9. On status zero, set `IS_SUCCESSFUL=1`, break, and exit zero.
+10. On failure, increment the counter, print a retry message, and delay two seconds unless the budget is exhausted.
+11. If the loop terminates without success, print two client log files and exit two.
 
 `set -euo pipefail` is enabled, so an untested command failure stops the script. Descriptor generation is not gated explicitly, but a write failure now terminates execution before the client runs.
 
@@ -33,4 +34,4 @@ The descriptor is generated once, not per attempt. Each attempt repeats login an
 
 ## Modification Impact
 
-Changing credential names affects [configuration](../configuration.md) and callers. Changing VDF generation affects [data contracts](../data-model.md), output disclosure, and client compatibility. Changing preview selection affects descriptor fields and detection order. Changing retry logic affects job duration, diagnostic reachability, and repeated remote side effects. Use [focused test scenarios](../testing.md), not a live item, to verify orchestration first.
+Changing credential names affects [configuration](../configuration.md) and callers. Changing VDF generation affects [data contracts](../data-model.md), output disclosure, and client compatibility. Changing preview selection or sizing affects descriptor fields, detection order, the `${STEAMCMD_ROOT}` copy, and the ImageMagick dependency. Changing retry logic affects job duration, diagnostic reachability, and repeated remote side effects. Use [focused test scenarios](../testing.md), not a live item, to verify orchestration first.

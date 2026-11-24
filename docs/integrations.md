@@ -16,6 +16,6 @@ Failures return through client status and inherited text output. The wrapper doe
 
 ## Install-Time Services
 
-The [installer](../scripts/install-steamcmd.sh) fetches the SteamCMD archive from the Steam CDN and a versioned helper from GitHub Releases, and may add a 32-bit runtime package through `apt-get` or `dnf`. Install access is therefore broader than runtime Steam access. No checksum/signature verification, network allowlist, or retry policy is supplied for these downloads beyond tool defaults and a three-attempt client bootstrap.
+The [installer](../scripts/install-steamcmd.sh) fetches the SteamCMD archive from the Steam CDN and a versioned helper from GitHub Releases, and may add a 32-bit runtime package or ImageMagick through `apt-get` or `dnf`. Install access is therefore broader than runtime Steam access. No checksum/signature verification, network allowlist, or retry policy is supplied for these downloads beyond tool defaults and a three-attempt client bootstrap.
 
 For policy references, consult [privacy](../PRIVACY.md) and [security](../SECURITY.md). For implementation risks rather than policy duplication, consult [security analysis](./security.md).

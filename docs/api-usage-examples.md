@@ -23,7 +23,7 @@ The identifiers are illustrative, not a verified writable item. No workflow toke
 
 ## Variants
 
-Omit the `STEAM_2FASEED` environment entry for the password-only branch. This changes command construction; Steam may still require additional authentication. Omit `changenote` to use the exact default in [configuration](./configuration.md). Omit `icon` to let the action detect `thumbnail.png`, `thumbnail.jpg`, `icon.png`, `icon.jpg`, `thumb.png`, or `thumb.jpg` in the content directory, or to omit the preview field entirely when none exists.
+Omit the `STEAM_2FASEED` environment entry for the password-only branch. This changes command construction; Steam may still require additional authentication. Omit `changenote` to use the exact default in [configuration](./configuration.md). Omit `icon` to let the action detect a recognised preview filename in the content directory, or to omit the preview field entirely when none exists. A preview image larger than 512 pixels in either dimension is downscaled automatically.
 
 The existing [README](../README.md) uses `@latest`; that is a mutable ref. A reviewed full commit hash reduces action-source movement but does not pin the floating base image and apt dependencies.
 

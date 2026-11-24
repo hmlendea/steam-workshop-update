@@ -102,9 +102,39 @@ load_entrypoint_functions() {
     sed -n '/^log_sanitized_cmd()/,/^}/p' "$ENTRYPOINT" >> "$tmpfile"
     sed -n '/^validate_input()/,/^}/p' "$ENTRYPOINT" >> "$tmpfile"
     sed -n '/^resolve_preview_file()/,/^}/p' "$ENTRYPOINT" >> "$tmpfile"
+    sed -n '/^resolve_image_tooling()/,/^}/p' "$ENTRYPOINT" >> "$tmpfile"
+    sed -n '/^downscale_preview_file()/,/^}/p' "$ENTRYPOINT" >> "$tmpfile"
     sed -n '/^run_steamcmd()/,/^}/p' "$ENTRYPOINT" >> "$tmpfile"
     source "$tmpfile"
     rm -f "$tmpfile"
+}
+
+# ImageMagick is an external prerequisite; skip the image-shaping suites when it
+# is unavailable rather than reporting a false failure.
+image_tooling_available() {
+    command -v magick >/dev/null 2>&1 || { command -v convert >/dev/null 2>&1 && command -v identify >/dev/null 2>&1; }
+}
+
+create_test_image() {
+    local file="$1"
+    local width="$2"
+    local height="$3"
+
+    if command -v magick >/dev/null 2>&1; then
+        magick -size "${width}x${height}" xc:white "$file"
+    else
+        convert -size "${width}x${height}" xc:white "$file"
+    fi
+}
+
+read_test_image_dimensions() {
+    local file="$1"
+
+    if command -v magick >/dev/null 2>&1; then
+        magick identify -format '%w %h' "${file}[0]"
+    else
+        identify -format '%w %h' "${file}[0]"
+    fi
 }
 
 # --- Test suites ---
@@ -249,6 +279,97 @@ test_resolve_preview_file() {
     touch "${tmpdir}/dist/thumb.png"
     resolve_preview_file
     assert_eq "icon.png preferred over thumb.png" "$(realpath "${tmpdir}/dist/icon.png")" "$PREVIEW_FILE"
+
+    rm -rf "$tmpdir"
+}
+
+test_resolve_image_tooling() {
+    echo -e "\n${YELLOW}=== Test Suite: resolve_image_tooling ===${NC}"
+
+    resolve_image_tooling
+
+    if ! image_tooling_available; then
+        echo -e "${YELLOW}SKIP${NC}: ImageMagick not installed; cannot assert tooling resolution"
+        return
+    fi
+
+    TESTS_RUN=$((TESTS_RUN + 1))
+    if [[ ${#IMAGE_CONVERT_CMD[@]} -gt 0 && ${#IMAGE_IDENTIFY_CMD[@]} -gt 0 ]]; then
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+        echo -e "${GREEN}PASS${NC}: ImageMagick entry points resolved"
+    else
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+        FAILED_TESTS+=("ImageMagick entry points resolved")
+        echo -e "${RED}FAIL${NC}: ImageMagick entry points resolved"
+    fi
+}
+
+test_downscale_preview_file() {
+    echo -e "\n${YELLOW}=== Test Suite: downscale_preview_file ===${NC}"
+
+    if ! image_tooling_available; then
+        echo -e "${YELLOW}SKIP${NC}: ImageMagick not installed; skipping downscale suite"
+        return
+    fi
+
+    local tmpdir
+    tmpdir=$(mktemp -d)
+    PREVIEW_MAX_DIMENSION=512
+    STEAMCMD_ROOT="${tmpdir}/steamcmd"
+    PREVIEW_DOWNSCALED_FILE="${STEAMCMD_ROOT}/preview"
+    mkdir -p "${STEAMCMD_ROOT}"
+    resolve_image_tooling
+
+    # No preview resolved: nothing to do
+    PREVIEW_FILE=""
+    downscale_preview_file
+    assert_exit_code "Absent preview needs no downscaling" "0" "$?"
+
+    # Oversized landscape image is scaled proportionally
+    create_test_image "${tmpdir}/wide.png" 1024 512
+    PREVIEW_FILE="${tmpdir}/wide.png"
+    downscale_preview_file
+    assert_exit_code "Oversized landscape image downscaled" "0" "$?"
+    assert_eq "Landscape dimensions fit the limit" "512 256" "$(read_test_image_dimensions "${PREVIEW_FILE}")"
+    assert_contains "Downscaled copy is used" "$PREVIEW_FILE" "${STEAMCMD_ROOT}/preview"
+
+    # Oversized square image becomes the exact limit
+    create_test_image "${tmpdir}/square.png" 800 800
+    PREVIEW_FILE="${tmpdir}/square.png"
+    downscale_preview_file
+    assert_eq "Square dimensions fit the limit" "512 512" "$(read_test_image_dimensions "${PREVIEW_FILE}")"
+
+    # Oversized portrait image is scaled proportionally
+    create_test_image "${tmpdir}/tall.png" 512 1024
+    PREVIEW_FILE="${tmpdir}/tall.png"
+    downscale_preview_file
+    assert_eq "Portrait dimensions fit the limit" "256 512" "$(read_test_image_dimensions "${PREVIEW_FILE}")"
+
+    # Image within the limit is left untouched
+    create_test_image "${tmpdir}/small.png" 256 256
+    PREVIEW_FILE="${tmpdir}/small.png"
+    downscale_preview_file
+    assert_exit_code "Within-limit image accepted" "0" "$?"
+    assert_eq "Within-limit image left unchanged" "${tmpdir}/small.png" "$PREVIEW_FILE"
+
+    # An exact-limit image is also left untouched
+    create_test_image "${tmpdir}/exact.png" 512 512
+    PREVIEW_FILE="${tmpdir}/exact.png"
+    downscale_preview_file
+    assert_eq "Exact-limit image left unchanged" "${tmpdir}/exact.png" "$PREVIEW_FILE"
+
+    # A non-image file has no readable dimensions
+    printf 'not an image' > "${tmpdir}/broken.png"
+    PREVIEW_FILE="${tmpdir}/broken.png"
+    downscale_preview_file >/dev/null 2>&1
+    assert_exit_code "Unreadable image rejected" "1" "$?"
+
+    # Without ImageMagick the function fails instead of silently skipping the limit
+    PREVIEW_FILE="${tmpdir}/small.png"
+    IMAGE_IDENTIFY_CMD=()
+    downscale_preview_file >/dev/null 2>&1
+    assert_exit_code "Missing ImageMagick is fatal" "1" "$?"
+    resolve_image_tooling
 
     rm -rf "$tmpdir"
 }
@@ -406,6 +527,8 @@ main() {
     test_validate_input_changenote
     test_validate_input_image
     test_resolve_preview_file
+    test_resolve_image_tooling
+    test_downscale_preview_file
     test_retry_counter
     test_totp_validation
     test_run_steamcmd_argument_array

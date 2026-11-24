@@ -17,6 +17,13 @@ WORKSHOP_VDF="${STEAMCMD_ROOT}/workshop.vdf"
 
 ATTEMPTS_MAX=3
 POST_UPLOAD_COOLDOWN_SECONDS=30
+PREVIEW_MAX_DIMENSION=512
+PREVIEW_DOWNSCALED_FILE="${STEAMCMD_ROOT}/preview"
+
+# ImageMagick entry points, resolved once. Version 7 exposes a single `magick`
+# command, while version 6 exposes separate `convert` and `identify` binaries.
+IMAGE_CONVERT_CMD=()
+IMAGE_IDENTIFY_CMD=()
 
 # Sanitize sensitive values from output
 sanitize_output() {
@@ -156,6 +163,80 @@ resolve_preview_file() {
     return 0
 }
 
+# Select the ImageMagick entry points available on the runner.
+resolve_image_tooling() {
+    if command -v magick >/dev/null 2>&1; then
+        IMAGE_CONVERT_CMD=(magick)
+        IMAGE_IDENTIFY_CMD=(magick identify)
+    elif command -v convert >/dev/null 2>&1 && command -v identify >/dev/null 2>&1; then
+        IMAGE_CONVERT_CMD=(convert)
+        IMAGE_IDENTIFY_CMD=(identify)
+    else
+        IMAGE_CONVERT_CMD=()
+        IMAGE_IDENTIFY_CMD=()
+    fi
+}
+
+# Keep the resolved preview image inside the Workshop dimension limit. The
+# original file is never modified; an oversized image is downscaled into a
+# fresh copy under STEAMCMD_ROOT, which then becomes the descriptor's
+# previewfile. Aspect ratio is preserved, and `>` ensures smaller images are
+# never enlarged.
+downscale_preview_file() {
+    if [[ -z "${PREVIEW_FILE}" ]]; then
+        return 0
+    fi
+
+    if [[ ${#IMAGE_IDENTIFY_CMD[@]} -eq 0 ]]; then
+        echo "FATAL: ImageMagick is required to check the preview image dimensions but was not found." >&2
+        return 1
+    fi
+
+    local dimensions
+    if ! dimensions="$("${IMAGE_IDENTIFY_CMD[@]}" -format '%w %h' "${PREVIEW_FILE}[0]" 2>/dev/null)"; then
+        echo "FATAL: Unable to read the dimensions of the preview image ${PREVIEW_FILE}." >&2
+        return 1
+    fi
+
+    local width height
+    read -r width height <<< "${dimensions}" || true
+
+    if [[ ! "${width}" =~ ^[0-9]+$ || ! "${height}" =~ ^[0-9]+$ ]]; then
+        echo "FATAL: Unable to parse the dimensions of the preview image ${PREVIEW_FILE}: ${dimensions}" >&2
+        return 1
+    fi
+
+    if (( width <= PREVIEW_MAX_DIMENSION && height <= PREVIEW_MAX_DIMENSION )); then
+        echo "Preview image is ${width}x${height}, within the ${PREVIEW_MAX_DIMENSION} pixel limit."
+        return 0
+    fi
+
+    if [[ ${#IMAGE_CONVERT_CMD[@]} -eq 0 ]]; then
+        echo "FATAL: ImageMagick is required to downscale the preview image but was not found." >&2
+        return 1
+    fi
+
+    local extension
+    extension="${PREVIEW_FILE##*.}"
+    if [[ "${extension}" == "${PREVIEW_FILE}" || -z "${extension}" ]]; then
+        extension="png"
+    fi
+
+    local downscaled_file="${PREVIEW_DOWNSCALED_FILE}.${extension}"
+
+    echo "Downscaling preview image from ${width}x${height} to fit within ${PREVIEW_MAX_DIMENSION}x${PREVIEW_MAX_DIMENSION}."
+
+    if ! "${IMAGE_CONVERT_CMD[@]}" "${PREVIEW_FILE}" -resize "${PREVIEW_MAX_DIMENSION}x${PREVIEW_MAX_DIMENSION}>" "${downscaled_file}"; then
+        echo "FATAL: Unable to downscale the preview image ${PREVIEW_FILE}." >&2
+        return 1
+    fi
+
+    PREVIEW_FILE="$(realpath "${downscaled_file}")"
+    echo "Downscaled preview image written to ${PREVIEW_FILE}."
+
+    return 0
+}
+
 if [[ -z "${STEAM_USERNAME:-}" ]]; then
     echo "FATAL: Environment variable STEAM_USERNAME is required but not provided."
     exit 1
@@ -182,8 +263,11 @@ if [[ -n "${INPUT_ICON:-}" ]]; then
 fi
 
 resolve_preview_file
+resolve_image_tooling
 
 mkdir -p "${STEAMCMD_ROOT}"
+
+downscale_preview_file
 
 if [[ -z "${PREVIEW_FILE}" ]]; then
     echo "No preview image provided or detected; omitting previewFile from the descriptor."

@@ -22,7 +22,7 @@ This is a schematic showing variable positions, not literal generated content. B
 | `appid` | Target Steam application | SteamCMD accepts it and account can publish for it |
 | `publishedfileid` | Existing Workshop item to update | Item exists and account has suitable rights |
 | `contentfolder` | Absolute-looking workspace-prefixed folder | Mounted folder exists and contains complete upload content |
-| `previewfile` | Absolute-looking path to the resolved preview image | File exists; the field appears only when an explicit icon or a recognised filename applies |
+| `previewfile` | Absolute-looking path to the resolved, dimension-limited preview image | File exists; the field appears only when an explicit icon or a recognised filename applies |
 | `changenote` | Update text, including optional Workshop markup | Literal VDF insertion remains valid |
 
 These assumptions are delegated, not checked. No entity database or relationship resolver ensures that the app, account, and item match.

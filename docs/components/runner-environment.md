@@ -18,6 +18,7 @@ Earlier revisions built a Docker action from `cm2network/steamcmd:root`. That fa
 | Assumption | Why It Matters |
 |---|---|
 | A 32-bit loader exists (`/lib/ld-linux.so.2` or equivalent) | SteamCMD's client is i386; the installer adds `lib32gcc-s1` through `apt-get`, or `glibc.i686` through `dnf`, when it is absent |
+| ImageMagick is available (`magick`, or `convert` and `identify`) | The installer adds `imagemagick`/`ImageMagick` when absent; the entrypoint needs it to size the preview image |
 | Bash, `tar`, and either `curl` or `wget` are available | Installer download and extraction |
 | The runtime user can install packages | Only needed when the loader is missing; GitHub-hosted runners already satisfy it |
 | `${STEAMCMD_ROOT}` is writable | Client installation, descriptor, and Steam session home |
