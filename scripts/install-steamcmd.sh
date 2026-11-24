@@ -63,6 +63,33 @@ ensure_32bit_runtime() {
     fi
 }
 
+# ImageMagick keeps the Workshop preview image inside the 512-pixel limit. It
+# is present on hosted runner images; self-hosted runners may need it added.
+ensure_image_tooling() {
+    if command -v magick >/dev/null 2>&1 || { command -v convert >/dev/null 2>&1 && command -v identify >/dev/null 2>&1; }; then
+        echo "ImageMagick already available."
+        return 0
+    fi
+
+    local -a privilege=()
+    if [[ ${EUID} -ne 0 ]]; then
+        privilege+=(sudo)
+    fi
+
+    if command -v apt-get >/dev/null 2>&1; then
+        echo "Installing ImageMagick for preview image sizing..."
+        "${privilege[@]}" apt-get update -qq
+        "${privilege[@]}" env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends imagemagick
+    elif command -v dnf >/dev/null 2>&1; then
+        echo "Installing ImageMagick for preview image sizing..."
+        "${privilege[@]}" dnf install -y ImageMagick
+    else
+        echo "WARNING: ImageMagick was not found and no supported package manager is available." >&2
+        echo "Install ImageMagick (magick, or convert and identify) to enforce the preview image size limit." >&2
+        return 0
+    fi
+}
+
 # The first invocation bootstraps and replaces the client with the current
 # version, which can exit non-zero, so a clean exit is retried.
 bootstrap_steamcmd() {
@@ -94,6 +121,8 @@ main() {
     mkdir -p "${STEAMCMD_INSTALL_DIR}" "${STEAMCMD_HOME}"
 
     ensure_32bit_runtime
+
+    ensure_image_tooling
 
     echo "Downloading SteamCMD from ${STEAMCMD_URL}"
     download "${STEAMCMD_URL}" "${STEAMCMD_ROOT}/steamcmd_linux.tar.gz"

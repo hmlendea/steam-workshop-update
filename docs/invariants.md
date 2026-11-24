@@ -7,7 +7,9 @@
 | Empty username/password prevents client invocation | Ordered checks in [entrypoint](../entrypoint.sh) | Callers diagnosing configuration failures |
 | Invalid inputs are rejected before any upload | `validate_input` calls before descriptor generation | Callers diagnosing configuration failures |
 | VDF precedes client invocation and uses a stable pathname | Heredoc before loop; `+workshop_build_item` argument | Client path resolution |
-| Credentials are absent from intentionally generated VDF fields | Four-field heredoc | Descriptor disclosure assumptions; caller values can still contain sensitive text |
+| Credentials are absent from intentionally generated VDF fields | Five-field heredoc | Descriptor disclosure assumptions; caller values can still contain sensitive text |
+| `previewfile` appears only when a preview image resolves | Conditional heredoc in [entrypoint](../entrypoint.sh) | Client descriptor compatibility; no field is emitted otherwise |
+| A resolved preview never exceeds 512 pixels per dimension | `downscale_preview_file` in [entrypoint](../entrypoint.sh) | Workshop preview compatibility; oversized images are downscaled rather than rejected |
 | Nonempty seed requires a valid helper result before client call | `run_steamcmd` early return | Authentication flow and secret handling |
 | Every seeded invocation regenerates its code | Helper call inside function | Retry behaviour and time assumptions |
 | Client zero status ends the loop successfully | `if run_steamcmd` check and success flag | GitHub step success |

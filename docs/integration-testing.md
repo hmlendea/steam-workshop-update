@@ -90,6 +90,7 @@ The integration test suite includes:
 |------|-------------|
 | `test_workshop_update_success` | Basic workshop update with valid credentials |
 | `test_workshop_update_with_changenote` | Verifies changenote is included in update |
+| `test_workshop_update_with_icon` | Verifies an explicit preview image is included in update |
 | `test_workshop_update_idempotency` | Verifies repeated updates with same content succeed |
 | `test_invalid_credentials` | Verifies proper failure handling with bad credentials |
 | `test_invalid_appid` | Verifies handling of non-existent AppID |

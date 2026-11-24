@@ -10,7 +10,7 @@ It is a short-lived command orchestrator, not a web service, persistent daemon, 
 
 | Boundary | Producer | Consumer | Contract |
 |---|---|---|---|
-| Workflow to action | Calling workflow | GitHub Actions composite action runner | Four `with` inputs; three credential environment variables |
+| Workflow to action | Calling workflow | GitHub Actions composite action runner | Five `with` inputs; three credential environment variables |
 | Install step to stopped step | [Installer](../scripts/install-steamcmd.sh) | [Entrypoint](../entrypoint.sh) | Client at `${STEAMCMD_ROOT}/install/steamcmd.sh`; helper at `${STEAMCMD_ROOT}/steam-totp` |
 | Runner to script | GitHub Actions | [Entrypoint](../entrypoint.sh) | `INPUT_*`, `GITHUB_WORKSPACE`, credential environment; workspace content |
 | Script to client | `run_steamcmd` | SteamCMD | Login arguments and VDF pathname |

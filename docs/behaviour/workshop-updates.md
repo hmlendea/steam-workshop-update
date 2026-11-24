@@ -6,6 +6,10 @@ The action uploads content for the app and existing Workshop item selected by th
 
 An omitted changenote receives the attribution default from [metadata](../../action.yml) when invoked through GitHub Actions. An explicit changenote is inserted unchanged into the VDF. No local escaping, length limit, or markup conversion is performed.
 
+An omitted `icon` leaves preview selection to detection: the content directory is probed for a recognised filename, and the first match becomes the descriptor's `previewfile`. When nothing matches, the field is omitted. An explicit `icon` takes precedence over detection and must be an existing file inside the workspace.
+
+A resolved preview image is downscaled with ImageMagick when either dimension exceeds 512 pixels. The downscaled copy is written under `${STEAMCMD_ROOT}`, preserving the aspect ratio, while the workspace original remains untouched.
+
 ## Preconditions
 
 The workflow must prepare the complete directory before calling the action. Steam account ownership/permission, item compatibility, network access, and acceptable authentication are required by the external service but not checked independently. Supplying a seed switches authentication modes; omitting it is not a guarantee that Steam will permit password-only login.

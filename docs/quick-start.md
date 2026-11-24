@@ -10,7 +10,7 @@ Start with the [repository overview](./repository-overview.md), [input schema](.
 2. Check out or otherwise create the upload content in the workflow workspace. The action does not perform checkout or build content.
 3. Identify the Steam app and existing Workshop item; confirm the chosen Steam account can update it.
 4. Store username/password as protected workflow secrets. Supply the optional seed only after verifying its format is compatible with the helper; the existing [README](../README.md) specifies a standard TOTP seed.
-5. Invoke the action with a reviewed ref, app ID, item ID, and relative content path. Optionally provide a changenote.
+5. Invoke the action with a reviewed ref, app ID, item ID, and relative content path. Optionally provide a changenote and a preview image; otherwise a recognised preview filename in the content directory is used automatically.
 6. Add caller-level timeout and same-item serialization. Inspect logs carefully and confirm remote publication for initial integration.
 
 The [example page](./api-usage-examples.md) is a step fragment, not a complete workflow. Never test by publishing to an item without permission.

@@ -6,6 +6,8 @@
 |---|---|---|
 | Workflow content directory | Caller writes; SteamCMD reads | Workspace path; action does not delete or snapshot it |
 | `${STEAMCMD_ROOT}/workshop.vdf` | Entrypoint writes/prints; SteamCMD reads | Overwritten once per invocation; no explicit deletion |
+| Detected preview image | Entrypoint reads; SteamCMD reads via descriptor | Workspace file; action does not modify or snapshot it |
+| Downscaled preview copy | Entrypoint writes; SteamCMD reads via descriptor | `${STEAMCMD_ROOT}/preview.<extension>`; overwritten per invocation, no explicit deletion |
 | Credential environment | Runner supplies; script/helper/client inherit | Process lifetime; host/process inspection remains a trust boundary |
 | Generated `STEAM_2FACODE` | Function writes; SteamCMD receives | Shell variable, overwritten on later seeded calls; not explicitly cleared |
 | Retry counters and success flag | Script only | In-memory invocation state; no resume record |

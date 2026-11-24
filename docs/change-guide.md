@@ -5,6 +5,8 @@
 | Intended Change | Owning Sources | Required Contract Review | Focused Validation |
 |---|---|---|---|
 | Add/rename input | [Metadata](../action.yml), [script](../entrypoint.sh) | `INPUT_*` consumption, defaults, direct script callers | Metadata-to-environment mapping and exact VDF output |
+| Change preview selection | [Script](../entrypoint.sh) | Detection order, `icon` precedence, descriptor field presence, path containment | Explicit, detected, and absent preview cases plus hostile paths |
+| Change preview sizing | [Script](../entrypoint.sh), [installer](../scripts/install-steamcmd.sh) | Dimension limit, aspect-ratio policy, ImageMagick dependency, `${STEAMCMD_ROOT}` copy | Oversized/within-limit images, aspect ratios, unreadable input, absent tooling |
 | Change descriptor | [Script](../entrypoint.sh) | Quoting, path containment, client parser, printed data | Normal/hostile strings, write failure, stale-file handling |
 | Fix retries | [Script](../entrypoint.sh) | Total attempts versus retries, terminal diagnostics | Exact counts for all-fail/eventual-success/helper-fail via [tests/test_entrypoint.sh](../tests/test_entrypoint.sh) |
 | Change authentication | [Script](../entrypoint.sh) | Seed format, code capture, argument boundaries, inherited secrets | Mock both branches and helper failures before live login |

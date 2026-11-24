@@ -2,9 +2,9 @@
 
 ## Install Pipeline
 
-[Action metadata](../action.yml) declares a composite action. The runner executes [scripts/install-steamcmd.sh](../scripts/install-steamcmd.sh), which ensures a 32-bit runtime, downloads Valve's SteamCMD archive, bootstraps the client, and downloads the `steam-totp` helper into `${STEAMCMD_ROOT}` (default `${RUNNER_TEMP}/steamcmd`). The second step runs [entrypoint.sh](../entrypoint.sh). There is no image build, artifact packaging, or repository-owned publish workflow.
+[Action metadata](../action.yml) declares a composite action. The runner executes [scripts/install-steamcmd.sh](../scripts/install-steamcmd.sh), which ensures a 32-bit runtime, adds ImageMagick when missing, downloads Valve's SteamCMD archive, bootstraps the client, and downloads the `steam-totp` helper into `${STEAMCMD_ROOT}` (default `${RUNNER_TEMP}/steamcmd`). The second step runs [entrypoint.sh](../entrypoint.sh). There is no image build, artifact packaging, or repository-owned publish workflow.
 
-Install requires access to the Steam CDN, GitHub Releases, and the runner's package manager when the 32-bit loader is missing. Runtime requires Steam access. No environment-specific deployment files, deployment database, readiness probe, or long-running server exist.
+Install requires access to the Steam CDN, GitHub Releases, and the runner's package manager when the 32-bit loader or ImageMagick is missing. Runtime requires Steam access. No environment-specific deployment files, deployment database, readiness probe, or long-running server exist.
 
 ## Supported Topology And Constraints
 

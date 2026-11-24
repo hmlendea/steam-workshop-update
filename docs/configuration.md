@@ -10,6 +10,7 @@
 | `itemid` | `INPUT_ITEMID` | Yes | None | Inserted as VDF `publishedfileid` |
 | `path` | `INPUT_PATH` | Yes | None | Literal `${GITHUB_WORKSPACE}/${INPUT_PATH}` becomes `contentfolder` |
 | `changenote` | `INPUT_CHANGENOTE` | No | Attribution below | Inserted as VDF `changenote` |
+| `icon` | `INPUT_ICON` | No | Auto-detected | Literal `${GITHUB_WORKSPACE}/${INPUT_ICON}` becomes VDF `previewfile`; when omitted, the content directory is probed for a recognised filename, and `previewfile` is omitted entirely when none applies. A resolved image is downscaled to fit within 512 pixels in either dimension before the descriptor is written. |
 
 Exact metadata default:
 
@@ -17,7 +18,9 @@ Exact metadata default:
 Uploaded using the [url=https://github.com/hmlendea/steam-workshop-update]hmlendea/steam-workshop-update[/url] GitHub Actions workflow.
 ```
 
-The script validates that `INPUT_APPID` and `INPUT_ITEMID` are numeric, that `${GITHUB_WORKSPACE}/${INPUT_PATH}` exists and resolves inside the workspace, and that `INPUT_CHANGENOTE` is printable and at most 1000 characters. It does not escape VDF strings or apply the metadata default itself; a direct script invocation bypasses metadata defaults. Absolute paths are not treated as replacements for the workspace prefix, though `realpath` containment rejects traversal outside the workspace.
+The script validates that `INPUT_APPID` and `INPUT_ITEMID` are numeric, that `${GITHUB_WORKSPACE}/${INPUT_PATH}` exists and resolves inside the workspace, that `INPUT_CHANGENOTE` is printable and at most 1000 characters, and that an explicitly supplied `INPUT_ICON` names an existing file inside the workspace. It does not escape VDF strings or apply the metadata default itself; a direct script invocation bypasses metadata defaults. Preview detection does not depend on metadata and therefore also applies to direct invocation. Absolute paths are not treated as replacements for the workspace prefix, though `realpath` containment rejects traversal outside the workspace.
+
+A resolved preview image is checked with ImageMagick and, when either dimension exceeds `PREVIEW_MAX_DIMENSION` (512), downscaled into a new file at `${STEAMCMD_ROOT}/preview.<extension>`, which becomes the descriptor's `previewfile`. The original workspace file is never modified, the aspect ratio is preserved, and smaller images are never enlarged. An unreadable image or absent ImageMagick aborts the run with status one rather than emitting an oversized preview.
 
 ## Credentials And Runtime Environment
 
@@ -35,6 +38,6 @@ Credentials must be supplied through the calling step's `env`, because composite
 
 ## Fixed Values
 
-The VDF lives at `${STEAMCMD_ROOT}/workshop.vdf`; SteamCMD at `${STEAMCMD_ROOT}/install/steamcmd.sh`; the helper at `${STEAMCMD_ROOT}/steam-totp`. `ATTEMPTS_MAX=3` and a two-second post-failure delay are hardcoded. These are not action inputs.
+The VDF lives at `${STEAMCMD_ROOT}/workshop.vdf`; SteamCMD at `${STEAMCMD_ROOT}/install/steamcmd.sh`; the helper at `${STEAMCMD_ROOT}/steam-totp`. `ATTEMPTS_MAX=3`, a two-second post-failure delay, and `PREVIEW_MAX_DIMENSION=512` are hardcoded, and a downscaled preview is written to `${STEAMCMD_ROOT}/preview.<extension>`. These are not action inputs.
 
 Changes to any interface value require synchronized review of [metadata](../action.yml), [orchestration](../entrypoint.sh), [workflow examples](./api-usage-examples.md), and [contracts](./invariants.md).
