@@ -10,6 +10,7 @@
 | `itemid` | `INPUT_ITEMID` | Yes | None | Inserted as VDF `publishedfileid` |
 | `path` | `INPUT_PATH` | Yes | None | Literal `${GITHUB_WORKSPACE}/${INPUT_PATH}` becomes `contentfolder` |
 | `changenote` | `INPUT_CHANGENOTE` | No | Attribution below | Inserted as VDF `changenote` |
+| `icon` | `INPUT_ICON` | No | Auto-detected | Literal `${GITHUB_WORKSPACE}/${INPUT_ICON}` becomes VDF `previewfile`; when omitted, the content directory is probed for `thumbnail.png`, `thumbnail.jpg`, `icon.png`, `icon.jpg`, `thumb.png`, and `thumb.jpg` in that order, and `previewfile` is omitted entirely when none applies |
 
 Exact metadata default:
 
@@ -17,7 +18,7 @@ Exact metadata default:
 Uploaded using the [url=https://github.com/hmlendea/steam-workshop-update]hmlendea/steam-workshop-update[/url] GitHub Actions workflow.
 ```
 
-The script validates that `INPUT_APPID` and `INPUT_ITEMID` are numeric, that `${GITHUB_WORKSPACE}/${INPUT_PATH}` exists and resolves inside the workspace, and that `INPUT_CHANGENOTE` is printable and at most 1000 characters. It does not escape VDF strings or apply the metadata default itself; a direct script invocation bypasses metadata defaults. Absolute paths are not treated as replacements for the workspace prefix, though `realpath` containment rejects traversal outside the workspace.
+The script validates that `INPUT_APPID` and `INPUT_ITEMID` are numeric, that `${GITHUB_WORKSPACE}/${INPUT_PATH}` exists and resolves inside the workspace, that `INPUT_CHANGENOTE` is printable and at most 1000 characters, and that an explicitly supplied `INPUT_ICON` names an existing file inside the workspace. It does not escape VDF strings or apply the metadata default itself; a direct script invocation bypasses metadata defaults. Preview detection does not depend on metadata and therefore also applies to direct invocation. Absolute paths are not treated as replacements for the workspace prefix, though `realpath` containment rejects traversal outside the workspace.
 
 ## Credentials And Runtime Environment
 

@@ -9,7 +9,8 @@ There is no logging library or configuration file. The [entrypoint](../entrypoin
 | Output | Timing | Semantics |
 |---|---|---|
 | `FATAL: Environment variable ...` | Missing username/password | Plain stdout prefix, not a structured fatal level |
-| Complete VDF | Before first attempt | Includes IDs, content path, changenote |
+| Complete VDF | Before first attempt | Includes IDs, content path, changenote, and preview image when resolved |
+| Preview resolution notice | Before descriptor generation | States the resolved path or that the field is omitted |
 | `Attempt N of 3...` | Before helper/client invocation | Progress; incremented per iteration |
 | `Attempt N failed.` / `Retrying...` | After nonzero result | Generic failure; no status code or category recorded |
 | `All 3 attempts failed.` | Terminal loop failure | Reached after three failed attempts |

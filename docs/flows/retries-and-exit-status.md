@@ -27,7 +27,7 @@ There is no local deadline and no exponential backoff beyond the fixed two-secon
 |---|---|---|
 | Missing username/password | `1` | Before descriptor generation |
 | Missing SteamCMD installation | `1` | Before descriptor generation |
-| Invalid `appid`, `itemid`, `path`, or `changenote` | `1` | Before descriptor generation |
+| Invalid `appid`, `itemid`, `path`, `changenote`, or `icon` | `1` | Before descriptor generation |
 | Helper/client returns zero as appropriate | `0` | Waits a 30-second post-upload cooldown; no independent remote publication check |
 | All three attempts fail | `2` | Prints both Steam log files first |
 | Cancellation, signal termination, arithmetic failure | Environment-dependent | Not normalized to the explicit application statuses |

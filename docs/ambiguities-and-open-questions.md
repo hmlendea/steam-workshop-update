@@ -4,7 +4,7 @@
 
 | Finding | Evidence | Operational Impact |
 |---|---|---|
-| Raw VDF interpolation | [Four-field heredoc](../entrypoint.sh) | Quotes or newlines in `changenote` can alter descriptor syntax |
+| Raw VDF interpolation | [Five-field heredoc](../entrypoint.sh) | Quotes or newlines in `changenote` or an `icon` path can alter descriptor syntax |
 | No committed CI workflow | Reviewed tracked inventory | The unit suite is not enforced automatically; only the `latest` tag workflow is committed |
 | No local timeout/lock/cleanup | [Entrypoint](../entrypoint.sh) | Callers and infrastructure must supply these controls |
 | Unpinned client download | [Installer](../scripts/install-steamcmd.sh) | Client revision and integrity are not fixed by the repository |

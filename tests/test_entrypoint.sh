@@ -101,6 +101,7 @@ load_entrypoint_functions() {
     sed -n '/^sanitize_output()/,/^}/p' "$ENTRYPOINT" > "$tmpfile"
     sed -n '/^log_sanitized_cmd()/,/^}/p' "$ENTRYPOINT" >> "$tmpfile"
     sed -n '/^validate_input()/,/^}/p' "$ENTRYPOINT" >> "$tmpfile"
+    sed -n '/^resolve_preview_file()/,/^}/p' "$ENTRYPOINT" >> "$tmpfile"
     sed -n '/^run_steamcmd()/,/^}/p' "$ENTRYPOINT" >> "$tmpfile"
     source "$tmpfile"
     rm -f "$tmpfile"
@@ -181,6 +182,75 @@ test_validate_input_changenote() {
     long_note=$(printf 'x%.0s' {1..1001})
     (validate_input "changenote" "$long_note" "changenote") >/dev/null 2>&1
     assert_exit_code "Overly long changenote rejected" "1" "$?"
+}
+
+test_validate_input_image() {
+    echo -e "\n${YELLOW}=== Test Suite: validate_input (image) ===${NC}"
+
+    local tmpdir
+    tmpdir=$(mktemp -d)
+    GITHUB_WORKSPACE="$tmpdir"
+
+    touch "$tmpdir/thumbnail.png"
+
+    # Valid image within workspace
+    (validate_input "icon" "$tmpdir/thumbnail.png" "image") >/dev/null 2>&1
+    assert_exit_code "Existing image accepted" "0" "$?"
+
+    # Missing file
+    (validate_input "icon" "$tmpdir/absent.png" "image") >/dev/null 2>&1
+    assert_exit_code "Missing image rejected" "1" "$?"
+
+    # Directory is not a file
+    (validate_input "icon" "$tmpdir" "image") >/dev/null 2>&1
+    assert_exit_code "Directory rejected as image" "1" "$?"
+
+    # Path traversal attempt
+    touch "$(dirname "$tmpdir")/outside.png"
+    (validate_input "icon" "$(dirname "$tmpdir")/outside.png" "image") >/dev/null 2>&1
+    assert_exit_code "Image outside workspace rejected" "1" "$?"
+    rm -f "$(dirname "$tmpdir")/outside.png"
+
+    # Empty icon
+    (validate_input "icon" "" "image") >/dev/null 2>&1
+    assert_exit_code "Empty image rejected" "1" "$?"
+
+    rm -rf "$tmpdir"
+}
+
+test_resolve_preview_file() {
+    echo -e "\n${YELLOW}=== Test Suite: resolve_preview_file ===${NC}"
+
+    local tmpdir
+    tmpdir=$(mktemp -d)
+    GITHUB_WORKSPACE="$tmpdir"
+    mkdir -p "${tmpdir}/dist"
+
+    # No icon and no recognised filename
+    INPUT_ICON=""
+    INPUT_PATH="dist"
+    resolve_preview_file
+    assert_eq "No preview image detected" "" "$PREVIEW_FILE"
+
+    # Explicit icon takes precedence over detection
+    touch "${tmpdir}/custom.png"
+    touch "${tmpdir}/dist/thumbnail.png"
+    INPUT_ICON="custom.png"
+    resolve_preview_file
+    assert_eq "Explicit icon preferred" "$(realpath "${tmpdir}/custom.png")" "$PREVIEW_FILE"
+
+    # Detection honours the recognition order
+    INPUT_ICON=""
+    resolve_preview_file
+    assert_eq "thumbnail.png detected" "$(realpath "${tmpdir}/dist/thumbnail.png")" "$PREVIEW_FILE"
+
+    rm -f "${tmpdir}/dist/thumbnail.png"
+    touch "${tmpdir}/dist/icon.png"
+    touch "${tmpdir}/dist/thumb.png"
+    resolve_preview_file
+    assert_eq "icon.png preferred over thumb.png" "$(realpath "${tmpdir}/dist/icon.png")" "$PREVIEW_FILE"
+
+    rm -rf "$tmpdir"
 }
 
 test_retry_counter() {
@@ -334,6 +404,8 @@ main() {
     test_validate_input_numeric
     test_validate_input_path
     test_validate_input_changenote
+    test_validate_input_image
+    test_resolve_preview_file
     test_retry_counter
     test_totp_validation
     test_run_steamcmd_argument_array

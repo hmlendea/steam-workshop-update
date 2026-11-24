@@ -4,7 +4,7 @@
 
 | Location | Ownership And Consumers | Change Implications |
 |---|---|---|
-| [action.yml](../action.yml) | Action identity, composite steps, four user inputs, `INPUT_*` mapping, changenote default | Input changes propagate into entrypoint variables, examples, and configuration docs |
+| [action.yml](../action.yml) | Action identity, composite steps, five user inputs, `INPUT_*` mapping, changenote default | Input changes propagate into entrypoint variables, examples, and configuration docs |
 | [scripts/install-steamcmd.sh](../scripts/install-steamcmd.sh) | 32-bit runtime check, SteamCMD download/bootstrap, helper download, `GITHUB_ENV` export | Client revision, download sources, architecture, and permissions |
 | [Dockerfile](../Dockerfile) | Local test image only; not used by GitHub Actions | Mirrors the installer for local verification |
 | [entrypoint.sh](../entrypoint.sh) | Credential checks, input validation, VDF heredoc, `run_steamcmd`, retry loop, exit/reporting paths | All production orchestration behaviour |
@@ -23,14 +23,15 @@
 
 ## Source Anchors
 
-There is one function relevant to upload in the [entrypoint](../entrypoint.sh), `run_steamcmd`, alongside helpers `sanitize_output`, `log_sanitized_cmd`, and `validate_input`. The remainder executes at script top level, in this order:
+There is one function relevant to upload in the [entrypoint](../entrypoint.sh), `run_steamcmd`, alongside helpers `sanitize_output`, `log_sanitized_cmd`, `validate_input`, and `resolve_preview_file`. The remainder executes at script top level, in this order:
 1. Path and layout resolution.
 2. Username, password, and client-availability checks.
-3. Input validation and content-path containment.
-4. VDF generation and printing.
-5. Function definitions.
-6. Counter initialisation and upload loop.
-7. Success exit or terminal diagnostics and failure exit.
+3. Input validation, explicit icon validation, and content-path containment.
+4. Preview-image resolution.
+5. VDF generation and printing.
+6. Function definitions.
+7. Counter initialisation and upload loop.
+8. Success exit or terminal diagnostics and failure exit.
 
 [scripts/install-steamcmd.sh](../scripts/install-steamcmd.sh) owns client acquisition and exposes a `main` guard so its functions can be sourced. There are no namespaces, application packages, controllers, migrations, dependency lockfiles, or test-enforcing CI workflow files in the reviewed tracked tree.
 

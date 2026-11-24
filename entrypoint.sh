@@ -61,6 +61,21 @@ validate_input() {
                 exit 1
             fi
             ;;
+        "image")
+            if [[ ! -f "$value" ]]; then
+                echo "FATAL: Input $name must be an existing file: $value"
+                exit 1
+            fi
+            # Prevent path traversal
+            local abs_image
+            local image_workspace_root
+            abs_image="$(realpath "$value")"
+            image_workspace_root="$(realpath "$GITHUB_WORKSPACE")"
+            if [[ "$abs_image" != "$image_workspace_root"* ]]; then
+                echo "FATAL: Input $name path must be within the workspace: $value"
+                exit 1
+            fi
+            ;;
         "path")
             if [[ ! -d "$value" ]]; then
                 echo "FATAL: Input $name path does not exist: $value"
@@ -100,6 +115,47 @@ validate_input() {
     esac
 }
 
+# Resolve the preview image, preferring an explicitly requested icon and
+# otherwise probing the content directory for a recognised filename.
+# Sets PREVIEW_FILE to an absolute path, or to an empty string when none applies.
+resolve_preview_file() {
+    local -ar recognised_names=(
+        cover.jpg
+        cover.png
+        icon.jpg
+        icon.png
+        image.jpg
+        image.png
+        picture.jpg
+        picture.png
+        preview.jpg
+        preview.png
+        thumb.jpg
+        thumb.png
+        thumbnail.jpg
+        thumbnail.png
+    )
+
+    PREVIEW_FILE=""
+
+    if [[ -n "${INPUT_ICON:-}" ]]; then
+        PREVIEW_FILE="$(realpath "${GITHUB_WORKSPACE}/${INPUT_ICON}")"
+        return 0
+    fi
+
+    local name
+    local candidate
+    for name in "${recognised_names[@]}"; do
+        candidate="${GITHUB_WORKSPACE}/${INPUT_PATH}/${name}"
+        if [[ -f "${candidate}" ]]; then
+            PREVIEW_FILE="$(realpath "${candidate}")"
+            return 0
+        fi
+    done
+
+    return 0
+}
+
 if [[ -z "${STEAM_USERNAME:-}" ]]; then
     echo "FATAL: Environment variable STEAM_USERNAME is required but not provided."
     exit 1
@@ -121,9 +177,18 @@ validate_input "itemid" "${INPUT_ITEMID:-}" "numeric"
 validate_input "path" "${GITHUB_WORKSPACE}/${INPUT_PATH:-}" "path"
 validate_input "changenote" "${INPUT_CHANGENOTE:-}" "changenote"
 
+if [[ -n "${INPUT_ICON:-}" ]]; then
+    validate_input "icon" "${GITHUB_WORKSPACE}/${INPUT_ICON}" "image"
+fi
+
+resolve_preview_file
+
 mkdir -p "${STEAMCMD_ROOT}"
 
-cat << EOF > "${WORKSHOP_VDF}"
+if [[ -z "${PREVIEW_FILE}" ]]; then
+    echo "No preview image provided or detected; omitting previewFile from the descriptor."
+
+    cat << EOF > "${WORKSHOP_VDF}"
 "workshopitem"
 {
   "appid" "${INPUT_APPID}"
@@ -132,6 +197,20 @@ cat << EOF > "${WORKSHOP_VDF}"
   "publishedfileid" "${INPUT_ITEMID}"
 }
 EOF
+else
+    echo "Using preview image: ${PREVIEW_FILE}"
+
+    cat << EOF > "${WORKSHOP_VDF}"
+"workshopitem"
+{
+  "appid" "${INPUT_APPID}"
+  "contentfolder" "${GITHUB_WORKSPACE}/${INPUT_PATH}"
+  "previewfile" "${PREVIEW_FILE}"
+  "changenote" "${INPUT_CHANGENOTE}"
+  "publishedfileid" "${INPUT_ITEMID}"
+}
+EOF
+fi
 
 cat "${WORKSHOP_VDF}"
 

@@ -11,12 +11,13 @@
 1. Resolve `${GITHUB_WORKSPACE}`, `${STEAMCMD_ROOT}`, `${STEAMCMD_HOME}`, the client path, the helper path, the log directory, and the descriptor path.
 2. Check `STEAM_USERNAME` for empty/unset; emit a fatal message and exit one if missing.
 3. Check `STEAM_PASSWORD` the same way, then require an executable client.
-4. Validate `appid` and `itemid` as numeric, the workspace-relative content path for existence and containment, and `changenote` for printable characters and length.
-5. Overwrite `${STEAMCMD_ROOT}/workshop.vdf` from four input variables and workspace path, then print it.
-6. Initialise loop state and invoke `run_steamcmd` inside an `if` condition.
-7. On status zero, set `IS_SUCCESSFUL=1`, break, and exit zero.
-8. On failure, increment the counter, print a retry message, and delay two seconds unless the budget is exhausted.
-9. If the loop terminates without success, print two client log files and exit two.
+4. Validate `appid` and `itemid` as numeric, the workspace-relative content path for existence and containment, and `changenote` for printable characters and length. Validate an explicitly supplied `icon` as an existing file inside the workspace.
+5. Resolve the preview image, preferring the explicit `icon` and otherwise probing the content directory for a recognised filename.
+6. Overwrite `${STEAMCMD_ROOT}/workshop.vdf` from the input variables and workspace path, adding `previewfile` only when a preview image resolves, then print it.
+7. Initialise loop state and invoke `run_steamcmd` inside an `if` condition.
+8. On status zero, set `IS_SUCCESSFUL=1`, break, and exit zero.
+9. On failure, increment the counter, print a retry message, and delay two seconds unless the budget is exhausted.
+10. If the loop terminates without success, print two client log files and exit two.
 
 `set -euo pipefail` is enabled, so an untested command failure stops the script. Descriptor generation is not gated explicitly, but a write failure now terminates execution before the client runs.
 
@@ -32,4 +33,4 @@ The descriptor is generated once, not per attempt. Each attempt repeats login an
 
 ## Modification Impact
 
-Changing credential names affects [configuration](../configuration.md) and callers. Changing VDF generation affects [data contracts](../data-model.md), output disclosure, and client compatibility. Changing retry logic affects job duration, diagnostic reachability, and repeated remote side effects. Use [focused test scenarios](../testing.md), not a live item, to verify orchestration first.
+Changing credential names affects [configuration](../configuration.md) and callers. Changing VDF generation affects [data contracts](../data-model.md), output disclosure, and client compatibility. Changing preview selection affects descriptor fields and detection order. Changing retry logic affects job duration, diagnostic reachability, and repeated remote side effects. Use [focused test scenarios](../testing.md), not a live item, to verify orchestration first.

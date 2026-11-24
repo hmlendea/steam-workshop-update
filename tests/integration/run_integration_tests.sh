@@ -209,6 +209,33 @@ test_workshop_update_with_changenote() {
     assert_contains "Output shows changenote in VDF" "$output" "changenote"
 }
 
+test_workshop_update_with_icon() {
+    log_info "Running integration test: Workshop update with preview image verification"
+
+    export STEAM_USERNAME
+    export STEAM_PASSWORD
+    export STEAM_2FASEED="${STEAM_2FASEED:-}"
+    export INPUT_APPID="$STEAM_APPID"
+    export INPUT_ITEMID="$STEAM_ITEMID"
+    export INPUT_PATH="$(basename "$STEAM_WORKSPACE_PATH")"
+    export INPUT_CHANGENOTE="Integration test preview image verification - $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+    export GITHUB_WORKSPACE="$(dirname "$STEAM_WORKSPACE_PATH")"
+
+    # Place a recognised preview filename in the content directory so that
+    # automatic detection resolves it.
+    cp "$STEAM_WORKSPACE_PATH/test_content.txt" "$STEAM_WORKSPACE_PATH/thumbnail.png"
+
+    local output
+    local exit_code=0
+    output=$("$ENTRYPOINT" 2>&1) || exit_code=$?
+
+    assert_exit_code "Workshop update with preview image exits with code 0" "0" "$exit_code"
+    assert_contains "Output shows previewfile in VDF" "$output" "previewfile"
+    assert_contains "Output names the detected preview image" "$output" "thumbnail.png"
+
+    rm -f "$STEAM_WORKSPACE_PATH/thumbnail.png"
+}
+
 test_workshop_update_idempotency() {
     log_info "Running integration test: Workshop update idempotency (second run)"
 
@@ -393,6 +420,7 @@ main() {
 
     test_workshop_update_success
     test_workshop_update_with_changenote
+    test_workshop_update_with_icon
     test_workshop_update_idempotency
     test_invalid_credentials
     test_invalid_appid

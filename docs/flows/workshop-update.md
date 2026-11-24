@@ -4,8 +4,8 @@
 
 1. A caller prepares upload content in its workspace and invokes the [composite action](../../action.yml). The action itself neither checks out source nor creates distribution content.
 2. GitHub Actions runs the install step, which downloads and bootstraps SteamCMD and the `steam-totp` helper under `${STEAMCMD_ROOT}`.
-3. The [script](../../entrypoint.sh) checks username, then password, then validates the four inputs and the content path.
-4. It expands four input strings and the workspace prefix into `${STEAMCMD_ROOT}/workshop.vdf`, then prints that file.
+3. The [script](../../entrypoint.sh) checks username, then password, then validates the inputs, an explicit preview image and the content path.
+4. It resolves the preview image, then expands the input strings and the workspace prefix into `${STEAMCMD_ROOT}/workshop.vdf`, adding `previewfile` only when a preview image resolves, and prints that file.
 5. `run_steamcmd` chooses [password-only or seeded authentication](./authentication.md).
 6. SteamCMD receives login, `workshop_build_item`, and quit commands in one invocation. The client reads the descriptor and content, interacts with Steam, and returns a status.
 7. Status zero sets the local success flag and breaks the loop.
